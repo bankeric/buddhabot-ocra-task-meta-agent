@@ -1,0 +1,98 @@
+name: 'Build and Deploy to Cloud Run'
+on:
+  push:
+    branches:
+      - production
+env:
+  PROJECT_ID: 'buddha-rag-prod'
+  REGION: 'asia-southeast1'
+  SERVICE: 'buddha-rag-prod'
+  WORKLOAD_IDENTITY_PROVIDER: 'projects/538009146790/locations/global/workloadIdentityPools/githubpool/providers/github-action-build-backend'
+  SERVICE_ACCOUNT: 'github-action@buddha-rag-prod.iam.gserviceaccount.com'
+jobs:
+  checkout:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.extract_sha.outputs.sha }}
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      - name: 'Extract Commit SHA'
+        id: extract_sha
+        run: echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+  auth-and-build:
+    needs: checkout
+    runs-on: ubuntu-latest
+    outputs:
+      docker_image: ${{ steps.build.outputs.docker_image }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: 'Debug GitHub Context'
+        run: |
+          echo '${{secrets.SERVICE_ACCOUNT_JSON_CREDENTIALS}}'
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      - id: auth
+        name: 'Authenticate to Google Cloud'
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: '${{ env.WORKLOAD_IDENTITY_PROVIDER }}'
+          service_account: '${{env.SERVICE_ACCOUNT}}'
+          token_format: access_token
+          # credentials_json: '${{secrets.SERVICE_ACCOUNT_JSON_CREDENTIALS}}'
+      - name: Login to GCR
+        uses: docker/login-action@v3
+        with:
+          registry: gcr.io
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - name: Verify config location
+        run: |
+          export DOCKER_CONFIG=/home/runner/.docker
+      - name: 'Build and Push Container'
+        id: build
+        run: |
+          DOCKER_IMAGE='gcr.io/${{ env.PROJECT_ID }}/buddha-rag-agent:latest'
+          docker build --platform linux/amd64 -t $DOCKER_IMAGE ./container
+          docker push $DOCKER_IMAGE
+          echo "docker_image=$DOCKER_IMAGE" >> "$GITHUB_OUTPUT"
+  deploy:
+    needs: auth-and-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - id: auth
+        name: 'Authenticate to Google Cloud'
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: '${{ env.WORKLOAD_IDENTITY_PROVIDER }}'
+          service_account: '${{env.SERVICE_ACCOUNT}}'
+      - name: 'Build and Push Container'
+        run: |
+          echo '${{ needs.auth-and-build.outputs.docker_image }}'
+          echo 'JWT_SECRET: ${{ secrets.JWT_SECRET }}'
+          if [ -z "${{ secrets.JWT_SECRET }}" ]; then
+            echo "JWT_SECRET is empty or not set"
+          else
+            echo "JWT_SECRET is set (length: ${#JWT_SECRET})"
+          fi
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      - name: 'Deploy to Cloud Run'
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: '${{ env.SERVICE }}'
+          region: '${{ env.REGION }}'
+          image: '${{ needs.auth-and-build.outputs.docker_image }}'
+          env_vars_update_strategy: overwrite
+          secrets: |
+              OPENAI_API_KEY=OPENAI_API_KEY:latest 
+              WEAVIATE_API_KEY=WEAVIATE_API_KEY:latest 
+              JWT_SECRET=JWT_SECRET:latest 
+              WEAVIATE_URL=WEAVIATE_URL:latest 
+      - name: 'Show output'
+        run: echo "Deployed to ${{ steps.deploy.outputs.url }}"
