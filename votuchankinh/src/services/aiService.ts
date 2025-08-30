@@ -61,6 +61,7 @@ export const sendMessage = async (data: SendMessageProps) => {
       Authorization: `Bearer ${apiToken}`,
     },
     data,
+    responseType: 'stream',
   });
   return response.data;
 };

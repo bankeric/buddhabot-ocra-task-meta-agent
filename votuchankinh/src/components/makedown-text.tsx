@@ -1,19 +1,19 @@
 // components/MarkdownRenderer.tsx
-import React from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface MarkdownRendererProps {
-  content: string
+  content: string;
 }
 
 export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
   return (
-    <div className='markdown-body'>
+    <div className="markdown-body">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          blockquote: ({ node, ...props }) => (
+          blockquote: ({ ...props }) => (
             <blockquote
               style={{
                 borderLeft: '4px solid #82181a',
@@ -29,5 +29,5 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
         {content}
       </ReactMarkdown>
     </div>
-  )
+  );
 }

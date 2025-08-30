@@ -18,10 +18,11 @@ const ebGaramond = EB_Garamond({
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <html lang="en">
-      <body className={cn(notoSerifSC.className, ebGaramond.className)}>
-        <Component {...pageProps} />
-      </body>
-    </html>
+    <>
+      <Component
+        {...pageProps}
+        className={cn(notoSerifSC.className, ebGaramond.className)}
+      />
+    </>
   );
 }

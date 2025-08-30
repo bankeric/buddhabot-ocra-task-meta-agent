@@ -1,3 +1,5 @@
+'use client';
+
 import type React from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
@@ -89,7 +91,7 @@ export default function AIPage() {
   const [showSignIn, setShowSignIn] = useState(false);
   const [language, setLanguage] = useState<'vi' | 'en'>('vi');
   const [isRecording, setIsRecording] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  // const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   // Agents
   const [agent, setAgent] = useState<string>();
@@ -171,35 +173,59 @@ export default function AIPage() {
       context: '',
       language,
       messages: [
+        ...messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+          created_at: msg.created_at,
+        })),
         {
           role: 'user',
           content: input,
           created_at: new Date().toISOString(),
         },
       ],
-      option: { stream: false },
+      option: { stream: true },
       session_id: chatId,
     };
 
+    setInput('');
+    setIsTyping(true);
+
     // Update conversation with user message
-    await sendMessage(newMessage);
 
     setMessages(prev => [
       ...prev,
       {
         agent_id: agent,
-        content: newMessage.messages[0].content,
+        content: input,
         created_at: new Date().toISOString(),
         dislike_user_ids: null,
         feedback: null,
         like_user_ids: null,
         role: 'user',
         thought: null,
-        uuid: chatId,
+        uuid: uuid(),
       },
     ]);
-    setInput('');
-    setIsTyping(true);
+
+    // Stream response from backend and update assistant message in real-time
+    const response = await sendMessage(newMessage);
+    setIsTyping(false);
+
+    setMessages(prev => [
+      ...prev,
+      {
+        agent_id: agent,
+        content: response,
+        created_at: new Date().toISOString(),
+        dislike_user_ids: null,
+        feedback: null,
+        like_user_ids: null,
+        role: 'assistant',
+        thought: null,
+        uuid: uuid(),
+      },
+    ]);
   };
 
   const handleRecording = () => {
@@ -207,10 +233,10 @@ export default function AIPage() {
     // TODO: Implement actual recording functionality
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    setSelectedFiles(prev => [...prev, ...files]);
-  };
+  // const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  //   const files = Array.from(event.target.files || []);
+  //   setSelectedFiles(prev => [...prev, ...files]);
+  // };
 
   const createNewConversation = () => {
     const newConv: Conversation = {
@@ -233,7 +259,6 @@ export default function AIPage() {
   };
 
   const onChangeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('=>>>>>>>input', e.target.value);
     setInput(e.target.value);
   };
 
@@ -458,7 +483,7 @@ export default function AIPage() {
                   </p>
                 </motion.div>
               ) : (
-                messages.map((message, index) => (
+                messages.map(message => (
                   <motion.div
                     key={message.uuid}
                     variants={itemVariants}
@@ -599,7 +624,7 @@ export default function AIPage() {
                   id="file-upload"
                   multiple
                   accept="image/*,text/*,.pdf,.doc,.docx"
-                  onChange={handleFileSelect}
+                  // onChange={handleFileSelect}
                   className="hidden"
                 />
                 {/* Attach button */}
@@ -619,12 +644,14 @@ export default function AIPage() {
                 {/* Text input */}
                 <input
                   type="text"
+                  value={input}
                   onChange={onChangeInput}
                   onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
                   placeholder={t.placeholder}
                   className={`flex-1 bg-[#f3ead7] text-[#1f1f1f] placeholder-[#1f1f1f]/60 rounded-2xl px-3 py-2 md:px-6 md:py-3 text-sm md:text-base
                    border-2 border-[#2c2c2c]
                     `}
+                  disabled={isTyping}
                 />
 
                 {/* Recording button */}

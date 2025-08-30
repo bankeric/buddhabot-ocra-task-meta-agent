@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@config '../../tailwind.config.ts';
 
 html,
 body {
@@ -8,19 +9,21 @@ body {
 /* -------------------- */
 /* Base Layer           */
 /* -------------------- */
-* {
-}
-body {
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4af37' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
-    linear-gradient(135deg, #f4e4bc 0%, #e8d5a3 50%, #dcc48a 100%);
-  background-size: 60px 60px, cover;
-  background-attachment: fixed;
-  color: #f5f5f5;
 
-  input,
-  textarea,
-  select,
-  button {
+@layer base {
+  * {
+    @apply border-[hsl(var(--border))];
+  }
+  body {
+    @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))];
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4af37' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
+      linear-gradient(135deg, #f4e4bc 0%, #e8d5a3 50%, #dcc48a 100%);
+    background-size: 60px 60px, cover;
+    background-attachment: fixed;
+    color: #f5f5f5;
+  }
+
+  input {
     outline: none;
   }
 }
