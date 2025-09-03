@@ -1,7 +1,7 @@
 'use client';
 
 import type React from 'react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import Link from 'next/link';
 import {
@@ -21,21 +21,25 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import {
+  apiToken,
+  createConversation,
   getAgents,
   getConversations,
   getMessages,
-  sendMessage,
 } from '@/services/aiService';
 import {
   Agent,
-  Message,
   Section,
   Conversation,
+  Message,
   SendMessageProps,
 } from '@/types';
 import { uuid } from 'uuidv4';
 import MarkdownRenderer from '@/components/makedown-text';
 import { useRouter } from 'next/router';
+import { useCompletion } from '@ai-sdk/react';
+import { getBackEndUrl } from '@/configs/config';
+import { set } from 'zod/v4';
 
 const translations = {
   vi: {
@@ -79,10 +83,6 @@ const translations = {
 };
 
 export default function AIPage() {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConversation, setActiveConversation] = useState<string>('');
-  const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -91,23 +91,102 @@ export default function AIPage() {
   const [showSignIn, setShowSignIn] = useState(false);
   const [language, setLanguage] = useState<'vi' | 'en'>('vi');
   const [isRecording, setIsRecording] = useState(false);
+  // const [input, setInput] = useState('');
   // const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+  const router = useRouter();
+  const chatId = router.query.chatId as string;
+  const url = getBackEndUrl();
+
+  // Conversations
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversation, setActiveConversation] = useState<string>('');
+  const [newConversation, setNewConversation] = useState<Conversation>();
 
   // Agents
   const [agent, setAgent] = useState<string>();
   const [listAgents, setListAgents] = useState<Agent[]>([]);
 
-  // Message
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Messages
+  const [listMessages, setListMessages] = useState<Message[]>([]);
+  const [displayedAIText, setDisplayedAIText] = useState<string>('');
+  // const [isTyping, setIsTyping] = useState(false);
 
   const t = translations[language];
-  const router = useRouter();
 
-  const chatId = router.query.chatId as string;
+  const {
+    completion,
+    complete,
+    isLoading: isTyping,
+    input,
+    handleInputChange,
+    setInput,
+  } = useCompletion({
+    api: `${url}/api/v1/chat/${chatId}/ask`,
+    streamProtocol: 'text',
+    onFinish: async () => {
+      setDisplayedAIText('');
+      const newMessages = await fetchMessages(chatId);
+      const isConversation = conversations.some(item => item.id === chatId);
+
+      console.log('params', {
+        newMessages,
+        agent,
+        isConversation,
+        condition: newMessages && agent && !isConversation,
+      });
+
+      if (newMessages && agent && !isConversation) {
+        console.log('Creating new conversation...');
+        await createConversation({
+          uuid: chatId,
+          language,
+          messages: newMessages.map(msg => ({
+            role: msg.role,
+            content: msg.content,
+            created_at: msg.created_at,
+          })),
+          agent_id: agent,
+        });
+
+        await fetchConversations();
+        setNewConversation(undefined);
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (!completion) return;
+
+    // Detect JSON objects
+    const matches = completion.match(/data:\s*(\{.*?\})(?=data:|\s*$)/gs);
+
+    if (matches) {
+      let newText = '';
+      matches.forEach(match => {
+        try {
+          const jsonStr = match.replace('data:', '').trim();
+          const parsed = JSON.parse(jsonStr);
+          if (parsed.type === 'text') {
+            newText += parsed.data;
+          }
+        } catch (e) {
+          console.error('Parse error', e);
+        }
+      });
+
+      setDisplayedAIText(newText);
+    }
+  }, [completion]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  //   setInput(event.target.value);
+  //   setAIInput(event.target.value);
+  // };
 
   const fetchConversations = async () => {
     const data = await getConversations();
@@ -131,7 +210,8 @@ export default function AIPage() {
     if (!chatId) return;
 
     const data = await getMessages(chatId);
-    setMessages(data);
+    setListMessages(data);
+    return data;
   };
 
   useEffect(() => {
@@ -142,18 +222,24 @@ export default function AIPage() {
   }, [chatId]);
 
   useEffect(() => {
-    if (chatId && !conversations.find(item => item.id === chatId)) {
-      setConversations(prev => [
-        {
-          id: chatId,
-          title: t.newConversation,
-          messages: [],
-          lastMessage: new Date(),
-        },
-        ...prev,
-      ]);
+    if (
+      chatId &&
+      conversations.length > 0 &&
+      !conversations.find(item => item.id === chatId)
+    ) {
+      setNewConversation({
+        id: chatId,
+        title: t.newConversation,
+        messages: [],
+        lastMessage: new Date(),
+      });
     }
   }, [chatId, conversations]);
+
+  const allConversations = useMemo(() => {
+    if (!newConversation) return conversations;
+    return [newConversation, ...conversations];
+  }, [newConversation, conversations]);
 
   useEffect(() => {
     fetchConversations();
@@ -165,35 +251,11 @@ export default function AIPage() {
     scrollToBottom();
   }, [conversations.length]);
 
-  const handleSendMessage = async () => {
+  const handleSubmit = async (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'Enter') return;
     if (!input.trim() || !chatId || !agent) return;
 
-    const newMessage: SendMessageProps = {
-      agent_id: agent,
-      context: '',
-      language,
-      messages: [
-        ...messages.map(msg => ({
-          role: msg.role,
-          content: msg.content,
-          created_at: msg.created_at,
-        })),
-        {
-          role: 'user',
-          content: input,
-          created_at: new Date().toISOString(),
-        },
-      ],
-      option: { stream: true },
-      session_id: chatId,
-    };
-
-    setInput('');
-    setIsTyping(true);
-
-    // Update conversation with user message
-
-    setMessages(prev => [
+    setListMessages(prev => [
       ...prev,
       {
         agent_id: agent,
@@ -208,24 +270,34 @@ export default function AIPage() {
       },
     ]);
 
-    // Stream response from backend and update assistant message in real-time
-    const response = await sendMessage(newMessage);
-    setIsTyping(false);
+    const newMessage: SendMessageProps = {
+      agent_id: agent,
+      context: '',
+      language,
+      messages: [
+        ...listMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+          created_at: msg.created_at,
+        })),
+        {
+          role: 'user',
+          content: input,
+          created_at: new Date().toISOString(),
+        },
+      ],
+      options: { stream: true },
+      session_id: chatId,
+    };
 
-    setMessages(prev => [
-      ...prev,
-      {
-        agent_id: agent,
-        content: response,
-        created_at: new Date().toISOString(),
-        dislike_user_ids: null,
-        feedback: null,
-        like_user_ids: null,
-        role: 'assistant',
-        thought: null,
-        uuid: uuid(),
+    setInput('');
+
+    await complete(input, {
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
       },
-    ]);
+      body: newMessage,
+    });
   };
 
   const handleRecording = () => {
@@ -239,14 +311,17 @@ export default function AIPage() {
   // };
 
   const createNewConversation = () => {
-    const newConv: Conversation = {
-      id: uuid(),
-      title: t.newConversation,
-      messages: [],
-      lastMessage: new Date(),
-    };
-    setConversations(prev => [newConv, ...prev]);
-    setActiveConversation(newConv.id);
+    const newId = uuid();
+    // const newConv: Conversation = {
+    //   id: newId,
+    //   title: t.newConversation,
+    //   messages: [],
+    //   lastMessage: new Date(),
+    // };
+
+    router.push(`/ai/${newId}`);
+    // setConversations(prev => [newConv, ...prev]);
+    // setActiveConversation(newConv.id);
     // setSidebarOpen(false)
   };
 
@@ -256,10 +331,6 @@ export default function AIPage() {
 
   const onChangeConversation = (id: string) => {
     router.push(`/ai/${id}`);
-  };
-
-  const onChangeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value);
   };
 
   const containerVariants = {
@@ -358,7 +429,7 @@ export default function AIPage() {
               </div>
 
               <div className="flex-1 overflow-y-auto px-3 space-y-2">
-                {conversations.map(conv => (
+                {allConversations.map(conv => (
                   <button
                     key={conv.id}
                     onClick={() => {
@@ -467,7 +538,7 @@ export default function AIPage() {
               initial="hidden"
               animate="visible"
             >
-              {!messages.length ? (
+              {!listMessages.length ? (
                 <motion.div
                   className="text-center py-16"
                   variants={itemVariants}
@@ -483,15 +554,100 @@ export default function AIPage() {
                   </p>
                 </motion.div>
               ) : (
-                messages.map(message => (
-                  <motion.div
-                    key={message.uuid}
-                    variants={itemVariants}
-                    className={`flex ${
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    {message.role === 'assistant' ? (
+                <>
+                  {listMessages.map(message => (
+                    <motion.div
+                      key={message.uuid}
+                      variants={itemVariants}
+                      className={`flex ${
+                        message.role === 'user'
+                          ? 'justify-end'
+                          : 'justify-start'
+                      }`}
+                    >
+                      {message.role === 'assistant' ? (
+                        <div className="flex items-start space-x-2 w-full max-w-[90%] md:max-w-[80%]">
+                          <div className="flex-shrink-0 mt-1">
+                            <Image
+                              src="/images/wordless-sutra-icon.png"
+                              alt="Wordless Sutra"
+                              width={40}
+                              height={40}
+                              className="w-8 h-8 md:w-12 md:h-12 rounded-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 p-3 md:p-4 rounded-2xl shadow-lg backdrop-blur-sm bg-[#f3ead7] text-[#1f1f1f] border-2 border-[#2c2c2c] shadow-[0_2px_0_#00000030,0_0_0_3px_#00000010_inset]">
+                            <MarkdownRenderer content={message.content} />
+                            <div className="flex items-center justify-between mt-3 pt-2 border-t border-[#2c2c2c]/20">
+                              <div className="flex items-center space-x-1 md:space-x-2">
+                                <button
+                                  className="p-1.5 hover:bg-[#2c2c2c]/10 rounded-full transition-colors"
+                                  title="Read aloud"
+                                >
+                                  <Volume2 className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#2c2c2c]/60" />
+                                </button>
+                                <button
+                                  className="p-1.5 hover:bg-[#2c2c2c]/10 rounded-full transition-colors"
+                                  title="Like"
+                                >
+                                  <ThumbsUp className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#2c2c2c]/60" />
+                                </button>
+                                <button
+                                  className="p-1.5 hover:bg-[#2c2c2c]/10 rounded-full transition-colors"
+                                  title="Dislike"
+                                >
+                                  <ThumbsDown className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#2c2c2c]/60" />
+                                </button>
+                                <button
+                                  className="p-1.5 hover:bg-[#2c2c2c]/10 rounded-full transition-colors"
+                                  title="Comment"
+                                >
+                                  <MessageCircle className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#2c2c2c]/60" />
+                                </button>
+                                <button
+                                  className="p-1.5 hover:bg-[#2c2c2c]/10 rounded-full transition-colors"
+                                  title="Copy"
+                                >
+                                  <Copy className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#2c2c2c]/60" />
+                                </button>
+                                <button
+                                  className="p-1.5 hover:bg-[#2c2c2c]/10 rounded-full transition-colors"
+                                  title="Share"
+                                >
+                                  <Share className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#2c2c2c]/60" />
+                                </button>
+                              </div>
+                              {/* <p className="text-xs opacity-70 font-medium">
+                              {new Date(message.created_at).toLocaleTimeString(
+                                [],
+                                {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                },
+                              )}
+                            </p> */}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="max-w-[85%] md:max-w-[75%] p-3 md:p-4 rounded-2xl shadow-lg backdrop-blur-sm bg-[#f3ead7] text-[#1f1f1f] border-2 border-[#2c2c2c] shadow-[0_2px_0_#00000030,0_0_0_3px_#00000010_inset]">
+                          <MarkdownRenderer content={message.content} />
+                          <p className="text-xs opacity-70 mt-2 font-medium">
+                            {/* {new Date(message.created_at).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })} */}
+                          </p>
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+
+                  {displayedAIText && (
+                    <motion.div
+                      variants={itemVariants}
+                      className="flex justify-start"
+                    >
                       <div className="flex items-start space-x-2 w-full max-w-[90%] md:max-w-[80%]">
                         <div className="flex-shrink-0 mt-1">
                           <Image
@@ -503,74 +659,15 @@ export default function AIPage() {
                           />
                         </div>
                         <div className="flex-1 p-3 md:p-4 rounded-2xl shadow-lg backdrop-blur-sm bg-[#f3ead7] text-[#1f1f1f] border-2 border-[#2c2c2c] shadow-[0_2px_0_#00000030,0_0_0_3px_#00000010_inset]">
-                          <MarkdownRenderer content={message.content} />
-                          <div className="flex items-center justify-between mt-3 pt-2 border-t border-[#2c2c2c]/20">
-                            <div className="flex items-center space-x-1 md:space-x-2">
-                              <button
-                                className="p-1.5 hover:bg-[#2c2c2c]/10 rounded-full transition-colors"
-                                title="Read aloud"
-                              >
-                                <Volume2 className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#2c2c2c]/60" />
-                              </button>
-                              <button
-                                className="p-1.5 hover:bg-[#2c2c2c]/10 rounded-full transition-colors"
-                                title="Like"
-                              >
-                                <ThumbsUp className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#2c2c2c]/60" />
-                              </button>
-                              <button
-                                className="p-1.5 hover:bg-[#2c2c2c]/10 rounded-full transition-colors"
-                                title="Dislike"
-                              >
-                                <ThumbsDown className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#2c2c2c]/60" />
-                              </button>
-                              <button
-                                className="p-1.5 hover:bg-[#2c2c2c]/10 rounded-full transition-colors"
-                                title="Comment"
-                              >
-                                <MessageCircle className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#2c2c2c]/60" />
-                              </button>
-                              <button
-                                className="p-1.5 hover:bg-[#2c2c2c]/10 rounded-full transition-colors"
-                                title="Copy"
-                              >
-                                <Copy className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#2c2c2c]/60" />
-                              </button>
-                              <button
-                                className="p-1.5 hover:bg-[#2c2c2c]/10 rounded-full transition-colors"
-                                title="Share"
-                              >
-                                <Share className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#2c2c2c]/60" />
-                              </button>
-                            </div>
-                            <p className="text-xs opacity-70 font-medium">
-                              {new Date(message.created_at).toLocaleTimeString(
-                                [],
-                                {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                },
-                              )}
-                            </p>
-                          </div>
+                          <MarkdownRenderer content={displayedAIText} />
                         </div>
                       </div>
-                    ) : (
-                      <div className="max-w-[85%] md:max-w-[75%] p-3 md:p-4 rounded-2xl shadow-lg backdrop-blur-sm bg-[#f3ead7] text-[#1f1f1f] border-2 border-[#2c2c2c] shadow-[0_2px_0_#00000030,0_0_0_3px_#00000010_inset]">
-                        <MarkdownRenderer content={message.content} />
-                        <p className="text-xs opacity-70 mt-2 font-medium">
-                          {new Date(message.created_at).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
-                      </div>
-                    )}
-                  </motion.div>
-                ))
+                    </motion.div>
+                  )}
+                </>
               )}
 
-              {isTyping && (
+              {isTyping && !displayedAIText && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -645,8 +742,8 @@ export default function AIPage() {
                 <input
                   type="text"
                   value={input}
-                  onChange={onChangeInput}
-                  onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
+                  onChange={handleInputChange}
+                  onKeyPress={handleSubmit}
                   placeholder={t.placeholder}
                   className={`flex-1 bg-[#f3ead7] text-[#1f1f1f] placeholder-[#1f1f1f]/60 rounded-2xl px-3 py-2 md:px-6 md:py-3 text-sm md:text-base
                    border-2 border-[#2c2c2c]
@@ -676,7 +773,7 @@ export default function AIPage() {
 
                 {/* Send Message Button */}
                 <button
-                  onClick={handleSendMessage}
+                  // onClick={handleSendMessage}
                   disabled={!input.trim() || isTyping}
                   className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-[#f3ead7] text-[#1f1f1f] rounded-2xl
              border-2 border-[#2c2c2c] shadow-[0_2px_0_#00000030,0_0_0_3px_#00000010_inset]

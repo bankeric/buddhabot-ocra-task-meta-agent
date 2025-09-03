@@ -1,10 +1,16 @@
 import { getBackEndUrl } from '@/configs/config';
-import { Agent, Message, Section, SendMessageProps } from '@/types';
+import {
+  Agent,
+  CreateConversationProps,
+  Message,
+  Section,
+  SendMessageProps,
+} from '@/types';
 import axios from 'axios';
 
 const url = getBackEndUrl();
-const apiToken =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMjVmMmU1ZTUtOGUxMi00MzU1LWE1MjYtYmM1MzQ2NGFlYTQwIiwiZXhwIjoxNzU2NjIzMjMxLCJpYXQiOjE3NTY1MzY4MzF9.KTagw5Hvacbgnj0OkYqdSpPlufl7b7wwzwl-HDK6GNw';
+export const apiToken =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMjVmMmU1ZTUtOGUxMi00MzU1LWE1MjYtYmM1MzQ2NGFlYTQwIiwiZXhwIjoxNzU2OTY0OTQ0LCJpYXQiOjE3NTY4Nzg1NDR9.2GwTHIg3q0Xkb5QUL_pHtRpmZOxsYt9zaoQ5M9v211I';
 
 export const getConversations = async (
   offset: number = 0,
@@ -54,14 +60,41 @@ export const getMessages = async (chatId: string) => {
 };
 
 export const sendMessage = async (data: SendMessageProps) => {
+  const response = await fetch(`${url}/api/v1/chat/${data.session_id}/ask`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.body) {
+    throw new Error('No response body');
+  }
+
+  // Example: Collect streamed text chunks
+  const reader = response.body.getReader();
+  let result = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    result += new TextDecoder().decode(value);
+  }
+
+  console.log('response:', result);
+
+  return result;
+};
+
+export const createConversation = async (data: CreateConversationProps) => {
   const response = await axios({
     method: 'POST',
-    url: `${url}/api/v1/chat/${data.session_id}/ask`,
+    url: `${url}/api/v1/sections`,
     headers: {
       Authorization: `Bearer ${apiToken}`,
     },
     data,
-    responseType: 'stream',
   });
-  return response.data;
+  return response.data as Section;
 };
