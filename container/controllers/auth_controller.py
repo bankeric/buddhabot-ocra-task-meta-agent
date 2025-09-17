@@ -1,6 +1,6 @@
 from flask import request, jsonify, g
-from services.handle_auth import sign_in, sign_up, verify_jwt_token, AuthError, blacklist_token, request_password_reset, reset_password
-from data_classes.common_classes import AuthRequest, PasswordResetRequest, ResetPasswordRequest
+from services.handle_auth import sign_in, sign_in_with_social, sign_up, verify_jwt_token, AuthError, blacklist_token, request_password_reset, reset_password
+from data_classes.common_classes import AuthRequest, PasswordResetRequest, ResetPasswordRequest, UserRole
 import logging
 from __init__ import app, login_required
 
@@ -99,3 +99,23 @@ def reset_password_endpoint():
     except Exception as e:
         logger.error(f"Error resetting password: {str(e)}")
         return jsonify({"error": "Failed to reset password"}), 500 
+
+@app.route('/api/v1/social-login', methods=['POST'])
+def social_login_endpoint():
+    """Social login endpoint"""
+    try:
+        body = request.json
+        if not body:
+            return jsonify({"error": "Request body is required"}), 400
+
+        email = body['email']
+        name = body['name']
+        role = body['role'] if 'role' in body else None
+        result = sign_in_with_social(email, name, role)
+        return jsonify(result), 200
+
+    except AuthError as e:
+        return jsonify({"error": e.message}), e.status_code
+    except Exception as e:
+        logger.error(f"Error during social login: {str(e)}")
+        return jsonify({"error": "Failed to process social login"}), 500
