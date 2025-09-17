@@ -350,3 +350,56 @@ def sign_in(auth_request: AuthRequest) -> Dict[str, Any]:
             "role": user.get("role")
         }
     } 
+
+def sign_in_with_social(email: str, name: str, role: Optional[str] = None) -> Dict[str, Any]:
+    """Sign in or register a user using social login"""
+    # Check if user already exists
+    user = get_user_by_email(email)
+    if not user:
+        # Create new user
+        user = User(
+            email=email,
+            password="",  # No password for social login
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+            name=name,
+            role=role if role else UserRole.STUDENT.value
+        )
+
+        # Insert user into database
+        user_data = {
+            "email": user.email,
+            "password": user.password,
+            "name": user.name,
+            "role": user.role,
+            "created_at": user.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "updated_at": user.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+        }
+        
+        # Insert and get the UUID
+        user_id = insert_to_collection(
+            collection_name="Users",
+            properties=user_data
+        )
+        if isinstance(user_id, uuid.UUID):
+            user_id = str(user_id)
+        
+        if not user_id:
+            raise AuthError("Failed to create user", 500)
+        
+    else:
+        user_id = user.get("uuid")
+        if not user_id:
+            raise AuthError("Invalid user data", 500)
+
+    # Generate token
+    token = create_jwt_token(user_id)
+    return {
+        "token": token,
+        "user": {
+            "id": user_id,
+            "email": email,
+            "name": name,
+            "role": role if role else (user.get("role") if user else UserRole.STUDENT.value)
+        }
+    }
