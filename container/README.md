@@ -40,3 +40,5 @@ Notes:
 4. **Run the project**
 - use `launch.json` to run the project
 - or run `python main.py` to run the project
+
+---
