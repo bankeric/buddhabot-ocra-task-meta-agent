@@ -2,7 +2,7 @@ name: 'Build and Deploy to Cloud Run'
 on:
   push:
     branches:
-      - production
+      - main
 env:
   PROJECT_ID: 'buddha-rag-prod'
   REGION: 'asia-southeast1'
