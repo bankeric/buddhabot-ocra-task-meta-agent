@@ -102,6 +102,10 @@ def initialize_schema() -> None:
     # add thought property to Messages collection
     try:
         messages_collection = client.collections.get(COLLECTION_MESSAGES)
+
+        messages_collection.config.add_property(
+            wvc.config.Property(name="social_id", data_type=wvc.config.DataType.TEXT),
+        )
         messages_collection.config.add_property(
             wvc.config.Property(name="like_user_ids", data_type=wvc.config.DataType.TEXT),
         )
