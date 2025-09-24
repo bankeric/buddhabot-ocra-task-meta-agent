@@ -191,6 +191,7 @@ def initialize_schema() -> None:
             name=COLLECTION_USERS,
             properties=[
                 wvc.config.Property(name="email", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="social_id", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="password", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="name", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="role", data_type=wvc.config.DataType.TEXT),

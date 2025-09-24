@@ -273,6 +273,21 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
         return user
     return None
 
+def get_user_by_social_id(social_id: str) -> Optional[Dict[str, Any]]:
+    """Get a user by social ID"""
+    filters = Filter.by_property("social_id").equal(social_id)
+    users = search_non_vector_collection(
+        collection_name="Users",
+        filters=filters,
+        limit=1,
+        properties=["social_id", "email", "name", "role", "created_at", "updated_at"]
+    )
+
+    if users:
+        user = users[0]
+        return user
+    return None
+
 def sign_up(auth_request: AuthRequest) -> Dict[str, Any]:
     """Register a new user"""
     # Check if user already exists
@@ -282,6 +297,7 @@ def sign_up(auth_request: AuthRequest) -> Dict[str, Any]:
 
     # Create new user
     user = User(
+        social_id=None,
         email=auth_request.email,
         password=generate_password_hash(auth_request.password),
         created_at=datetime.now(UTC),
@@ -292,6 +308,7 @@ def sign_up(auth_request: AuthRequest) -> Dict[str, Any]:
 
     # Insert user into database
     user_data = {
+        "social_id": user.social_id,
         "email": user.email,
         "password": user.password,
         "name": user.name,
@@ -351,13 +368,14 @@ def sign_in(auth_request: AuthRequest) -> Dict[str, Any]:
         }
     } 
 
-def sign_in_with_social(email: str, name: str, role: Optional[str] = None) -> Dict[str, Any]:
+def sign_in_with_social(social_id: str, email: str, name: str, role: Optional[str] = None) -> Dict[str, Any]:
     """Sign in or register a user using social login"""
     # Check if user already exists
-    user = get_user_by_email(email)
+    user = get_user_by_social_id(social_id)
     if not user:
         # Create new user
         user = User(
+            social_id=social_id,
             email=email,
             password="",  # No password for social login
             created_at=datetime.now(UTC),
@@ -368,6 +386,7 @@ def sign_in_with_social(email: str, name: str, role: Optional[str] = None) -> Di
 
         # Insert user into database
         user_data = {
+            "social_id": user.social_id,
             "email": user.email,
             "password": user.password,
             "name": user.name,
@@ -398,6 +417,7 @@ def sign_in_with_social(email: str, name: str, role: Optional[str] = None) -> Di
         "token": token,
         "user": {
             "id": user_id,
+            "social_id": social_id,
             "email": email,
             "name": name,
             "role": role if role else (user.get("role") if user else UserRole.STUDENT.value)
