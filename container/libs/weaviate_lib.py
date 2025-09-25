@@ -74,6 +74,10 @@ def initialize_schema() -> None:
             ]
         )
         print("🙌🏼 Collection Documents created successfully")
+
+    # ----------------------------------------------------------
+    # MESSAGES COLLECTION
+    # ----------------------------------------------------------
     exists = client.collections.exists(COLLECTION_MESSAGES)
     if not exists:
         client.collections.create(
@@ -104,9 +108,6 @@ def initialize_schema() -> None:
         messages_collection = client.collections.get(COLLECTION_MESSAGES)
 
         messages_collection.config.add_property(
-            wvc.config.Property(name="social_id", data_type=wvc.config.DataType.TEXT),
-        )
-        messages_collection.config.add_property(
             wvc.config.Property(name="like_user_ids", data_type=wvc.config.DataType.TEXT),
         )
         messages_collection.config.add_property(
@@ -121,6 +122,9 @@ def initialize_schema() -> None:
     except Exception as e:
         print(f"Error adding thought property to Messages collection: {e}")
     
+    # ----------------------------------------------------------
+    # FINE TUNE COLLECTIONS
+    # ----------------------------------------------------------
     exists = client.collections.exists(COLLECTION_FINE_TUNING_MODELS)
     if not exists:
         client.collections.create(
@@ -143,6 +147,10 @@ def initialize_schema() -> None:
             ]
         )
         print("🙌🏼 Collection FineTuningModels created successfully")
+
+    # ----------------------------------------------------------
+    # API_KEYS COLLECTION
+    # ----------------------------------------------------------
     exists = client.collections.exists(COLLECTION_API_KEYS)
     if not exists:
         client.collections.create(
@@ -161,6 +169,10 @@ def initialize_schema() -> None:
             ]
         )
         print("🙌🏼 Collection ApiKeys created successfully")
+
+    # ----------------------------------------------------------
+    # CHATS COLLECTION
+    # ----------------------------------------------------------
     exists = client.collections.exists(COLLECTION_CHATS)
     if not exists:
         client.collections.create(
@@ -189,6 +201,9 @@ def initialize_schema() -> None:
     except Exception as e:
         print(f"Error adding context and thought property to Chats collection: {e}")
     
+    # ----------------------------------------------------------
+    # USERS COLLECTION
+    # ----------------------------------------------------------
     exists = client.collections.exists(COLLECTION_USERS)
     if not exists:
         client.collections.create(
@@ -204,6 +219,18 @@ def initialize_schema() -> None:
             ]
         )
         print("🙌🏼 Collection Users created successfully")
+
+    # add thought property to Users collection
+    try:
+        users_collection = client.collections.get(COLLECTION_USERS)
+
+        users_collection.config.add_property(
+            wvc.config.Property(name="social_id", data_type=wvc.config.DataType.TEXT),
+        )
+ 
+    except Exception as e:
+        print(f"Error adding thought property to Users collection: {e}")
+
     exists = client.collections.exists(COLLECTION_FILES)
     if not exists:
         client.collections.create(
@@ -217,6 +244,10 @@ def initialize_schema() -> None:
             ]
         )
         print("🙌🏼 Collection Files created successfully")
+
+    # ----------------------------------------------------------
+    # TOKEN_BLACKLIST COLLECTION
+    # ----------------------------------------------------------
     exists = client.collections.exists(COLLECTION_TOKEN_BLACKLIST)
     if not exists:
         client.collections.create(
@@ -229,6 +260,11 @@ def initialize_schema() -> None:
             ]
         )
         print("🙌🏼 Collection TokenBlacklist created successfully")
+
+
+    # ----------------------------------------------------------
+    # AGENTS COLLECTION
+    # ----------------------------------------------------------
     exists = client.collections.exists(COLLECTION_AGENTS)
     if not exists:
         client.collections.create(
@@ -255,6 +291,10 @@ def initialize_schema() -> None:
             ]
         )
         print("🙌🏼 Collection Agents created successfully")
+
+    # ----------------------------------------------------------
+    # AGENT_SETTINGS COLLECTION
+    # ----------------------------------------------------------
     exists = client.collections.exists(COLLECTION_AGENT_SETTINGS)
     if not exists:
         client.collections.create(
@@ -269,6 +309,10 @@ def initialize_schema() -> None:
             ]
         )
         print("🙌🏼 Collection AgentSettings created successfully")
+
+    # ----------------------------------------------------------
+    # PASSWORD_RESET_TOKENS COLLECTION
+    # ----------------------------------------------------------
     exists = client.collections.exists(COLLECTION_PASSWORD_RESET_TOKENS)
     if not exists:
         client.collections.create(
