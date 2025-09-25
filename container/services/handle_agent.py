@@ -148,7 +148,7 @@ def update_agent(agent_id: str, **kwargs) -> Dict[str, Any]:
         # Update fields
         update_data = {}
         for key, value in kwargs.items():
-            if key in ["name", "description", "system_prompt", "model", "temperature", "language", "system_prompt", "corpus_id"]:
+            if key in ["name", "description", "system_prompt", "model", "temperature", "language", "system_prompt", "corpus_id", "status"]:
                 update_data[key] = value
             elif key in ["tools", "conversation_starters", "tags"]:
                 update_data[key] = json.dumps(value) if isinstance(value, list) else value
