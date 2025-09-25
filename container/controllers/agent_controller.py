@@ -56,10 +56,9 @@ def list_agents_endpoint():
     try:
         limit = int(request.args.get('limit', 10))
         language = request.args.get('language')
-        if not language:
-            agents = list_agents(limit=limit)
-        else:
-            agents = list_agents(limit=limit, language=language)
+        status = request.args.get('status')
+
+        agents = list_agents(limit=limit, language=language, status=status)
         # agents = list_assistants()
         return jsonify(agents), 200
     except Exception as e:

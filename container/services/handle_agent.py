@@ -64,7 +64,7 @@ def create_agent(
     except Exception as e:
         return {"error": f"Failed to create agent: {str(e)}"}
 
-def list_agents(author: str = "system", limit: int = 10, language: Optional[str] = None) -> List[Dict[str, Any]]:
+def list_agents(author: str = "system", limit: int = 10, language: Optional[str] = None, status: Optional[AgentStatus] = None) -> List[Dict[str, Any]]:
     """
     List all agents created by a specific author.
     
@@ -89,6 +89,9 @@ def list_agents(author: str = "system", limit: int = 10, language: Optional[str]
             response = collection.query.fetch_objects(
                 limit=limit,
             )
+
+        if status:
+            response.objects = [obj for obj in response.objects if obj.properties.get("status") == status.value]
         
         agents = []
         for obj in response.objects:
