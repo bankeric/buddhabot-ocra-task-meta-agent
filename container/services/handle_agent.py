@@ -64,7 +64,7 @@ def create_agent(
     except Exception as e:
         return {"error": f"Failed to create agent: {str(e)}"}
 
-def list_agents(author: str = "system", limit: int = 10, language: Optional[str] = None, status: Optional[AgentStatus] = None) -> List[Dict[str, Any]]:
+def list_agents(author: str = "system", limit: int = 10, language: Optional[str] = None, status: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     List all agents created by a specific author.
     
@@ -79,19 +79,27 @@ def list_agents(author: str = "system", limit: int = 10, language: Optional[str]
         collection = client.collections.get(COLLECTION_AGENTS)
         
         # filters = wvc.query.Filter.by_property("author").equal(author)
+        filters = []
+        
         if language:
-            filters = wvc.query.Filter.by_property("language").equal(language)
+            filters.append(wvc.query.Filter.by_property("language").equal(language))
+        
+        if status:
+            filters.append(wvc.query.Filter.by_property("status").equal(status))
+        
+        if filters:
+            combined_filter = filters[0]
+            for filter_item in filters[1:]:
+                combined_filter = combined_filter & filter_item
+            
             response = collection.query.fetch_objects(
-                limit=limit,
-                filters=filters
+            limit=limit,
+            filters=combined_filter
             )
         else:
             response = collection.query.fetch_objects(
-                limit=limit,
+            limit=limit,
             )
-
-        if status:
-            response.objects = [obj for obj in response.objects if obj.properties.get("status") == status.value]
         
         agents = []
         for obj in response.objects:
