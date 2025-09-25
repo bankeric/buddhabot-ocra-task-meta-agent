@@ -110,8 +110,12 @@ def social_login_endpoint():
 
         email = body['email']
         name = body['name']
+        social_id= body['social_id']
+
+        if not email or not name or not social_id:
+            return jsonify({"error": "email, name, and social_id are required"}), 400
         role = body['role'] if 'role' in body else None
-        result = sign_in_with_social(email, name, role)
+        result = sign_in_with_social(social_id, email, name, role)
         return jsonify(result), 200
 
     except AuthError as e:

@@ -120,6 +120,7 @@ class SignUpRequest:
 class User:
     email: str
     password: str  # This will be hashed
+    social_id: Optional[str] = None
     name: Optional[str] = None
     role: Optional[str] = None
     created_at: Optional[datetime] = None
