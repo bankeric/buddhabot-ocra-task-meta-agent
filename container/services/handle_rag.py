@@ -66,7 +66,7 @@ async def handle_upload_file(files: List[FileStorage], agent_id: str) -> AsyncGe
             
             # Create temporary file with proper extension
             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=file_extension)
-            file.save(temp_file.name)
+            file.save(temp_file)
             temp_file.close()
             
             temp_files_data.append({
