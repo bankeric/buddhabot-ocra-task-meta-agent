@@ -9,7 +9,7 @@ from services.handle_agent import (
     test_agent
 )
 from services.handle_ask import handle_ask_streaming, handle_ask_non_streaming, AskError
-from services.handle_rag import handle_upload_file
+from services.handle_rag import handle_upload_file, upload_files
 import json
 import logging
 import uuid
@@ -220,7 +220,9 @@ def upload_file_endpoint(agent_id):
                 "error": "No files provided",
                 "status": "error"
             }), 400
-        
+
+        file_datas = upload_files(files)
+        print(f"Prepared {len(file_datas)} files for upload.")
         def generate():
             try:
                 # Create new event loop for this thread if needed
@@ -232,7 +234,7 @@ def upload_file_endpoint(agent_id):
                 
                 # Run the async generator
                 async def async_generate():
-                    async for update in handle_upload_file(files, agent_id):
+                    async for update in handle_upload_file(file_datas, agent_id):
                         yield f"{json.dumps(update)}\n\n"
                 
                 # Convert async generator to sync generator

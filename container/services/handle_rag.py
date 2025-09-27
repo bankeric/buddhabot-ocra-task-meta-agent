@@ -13,61 +13,32 @@ when user upload a file, it will be uploaded to the rag corpus_id
 if the agent does not have a rag corpus_id, it will be created
 """
 
-async def handle_upload_file(files: List[FileStorage], agent_id: str) -> AsyncGenerator[Dict[str, Any], None]:
-    agent = get_agent_by_id(agent_id)
-    if not agent:
-        yield {"error": "Agent not found", "status": "error"}
-        return
-    
-    if not agent["corpus_id"]:
-        yield {"status": "creating_corpus", "message": "Creating RAG corpus..."}
-        
-        rag_corpus = add_corpus(display_name=agent["name"])
-        corpus_id = rag_corpus.name.split("/")[-1]
-        agent["corpus_id"] = corpus_id
-        update_agent(agent_id, corpus_id=corpus_id)
-        yield {"status": "corpus_created", "corpus_id": corpus_id, "message": "RAG corpus created successfully"}
-    
-    total_files = len(files)
-    successful_count = 0
-    failed_count = 0
-    
-    yield {"status": "starting_upload", "total_files": total_files, "message": f"Starting upload of {total_files} files"}
-    
-    # First, save all files to temporary locations to avoid file handle conflicts
+
+def upload_files(files: List[FileStorage]) -> Dict[str, Any]:
     temp_files_data = []
+
     for index, file in enumerate(files, 1):
-        yield {"status": "preparing", "filename": file.filename, "progress": f"{index}/{total_files}", "message": f"Preparing {file.filename}..."}
-        
+        print(f"Preparing file {index}/{len(files)}: {file.filename}")
         # Save file to temporary location immediately
-        
         if file.filename == '':
-            failed_count += 1
-            yield {
-                "status": "failed",
-                "filename": "unknown",
-                "error": "File name is required",
-                "progress": f"{index}/{total_files}",
-                "successful_count": 0,
-                "failed_count": failed_count,
-                "message": "Failed: File name is required"
-            }
             continue
             
         try:
             # Get the original filename and ensure it has an extension
             original_filename = file.filename or "uploaded_file"
             display_name = secure_filename(original_filename)
-            
+
             # Extract file extension
             file_extension = ""
             if "." in original_filename:
                 file_extension = "." + original_filename.split(".")[-1]
-            
+
             # Create temporary file with proper extension
             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=file_extension)
-            file.save(temp_file)
+            file.save(temp_file.name)
             temp_file.close()
+
+            print(f"File saved to temporary path: {temp_file.name}")
             
             temp_files_data.append({
                 'temp_path': temp_file.name,
@@ -77,24 +48,42 @@ async def handle_upload_file(files: List[FileStorage], agent_id: str) -> AsyncGe
                 'size': file.content_length if hasattr(file, 'content_length') else None,
                 'index': index
             })
-            
+
+            return temp_files_data
         except Exception as e:
             failed_count += 1
-            yield {
-                "status": "failed",
-                "filename": file.filename,
-                "error": str(e),
-                "progress": f"{index}/{total_files}",
-                "successful_count": 0,
-                "failed_count": failed_count,
-                "message": f"Failed to prepare {file.filename}: {str(e)}"
-            }
+            print(f"Error preparing file {file.filename}: {e}")
+            return []
+    
+
+
+async def handle_upload_file(files: List[FileStorage], agent_id: str) -> AsyncGenerator[Dict[str, Any], None]:
+    agent = get_agent_by_id(agent_id)
+    if not agent:
+        print("Agent not found")
+        yield {"error": "Agent not found", "status": "error"}
+        return
+    
+    if not agent["corpus_id"]:
+        print("Creating RAG corpus...")
+        yield {"status": "creating_corpus", "message": "Creating RAG corpus..."}
+        rag_corpus = add_corpus(display_name=agent["name"])
+        corpus_id = rag_corpus.name.split("/")[-1]
+        agent["corpus_id"] = corpus_id
+        update_agent(agent_id, corpus_id=corpus_id)
+        yield {"status": "corpus_created", "corpus_id": corpus_id, "message": "RAG corpus created successfully"}
+    
+    successful_count = 0
+    failed_count = 0
+    total_files = len(files)
+    
+    # yield {"status": "starting_upload", "total_files": total_files, "message": f"Starting upload of {total_files} files"}
     
     # Now create async tasks for all prepared files
     tasks = []
     task_to_metadata = {}
     
-    for file_data in temp_files_data:
+    for file_data in files:
         index = file_data['index']
         yield {"status": "uploading", "filename": file_data['original_filename'], "progress": f"{index}/{total_files}", "message": f"Uploading {file_data['original_filename']}..."}
         
@@ -129,6 +118,7 @@ async def handle_upload_file(files: List[FileStorage], agent_id: str) -> AsyncGe
                     "result": result
                 }
             except Exception as e:
+                print(f"Error uploading file {file_data['original_filename']}: {e}")
                 failed_count += 1
                 yield {
                     "status": "failed",
