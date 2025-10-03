@@ -81,6 +81,7 @@ class Agent:
     status: AgentStatus
     agent_type: str
     uuid: str
+    level: int
     corpus_id: Optional[str] = None
     tags: Optional[List[str]] = None
     conversation_starters: Optional[List[str]] = None
@@ -125,6 +126,7 @@ class User:
     role: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    last_login_at: Optional[datetime] = None
 
 @dataclass
 class AuthRequest:
@@ -299,3 +301,33 @@ class PasswordResetToken:
     expires_at: datetime
     created_at: Optional[datetime] = None
     used: Optional[bool] = False
+
+@dataclass
+class SocialMedia:
+    platform: str
+    share_count: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+@dataclass
+class Subscription:
+    user_id: str
+    level: int
+    status: str
+    start_date: datetime
+    end_date: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+class SubscriptionStatus(Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    DELETED = "deleted"
+    
+
+@dataclass
+class CreateSubscriptionRequest:
+    user_id: str
+    tx_id: str
+    level: int

@@ -6,7 +6,7 @@ from weaviate.classes.query import Filter
 from weaviate.collections.classes.grpc import Sort
 import uuid
 from libs.weaviate_lib import COLLECTION_USERS
-from data_classes.common_classes import UserRole
+from data_classes.common_classes import UserRole, User
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import threading
@@ -267,3 +267,120 @@ def get_user_stats():
     except Exception as e:
         print(f"Error getting user stats: {str(e)}")
         raise UserError("Failed to get user stats", 500)
+    
+def get_new_users_list() -> List[Dict[str, Any]]:
+    """Get list of new users in the current month - Admin only"""
+    try:
+        # Get the first day of the current month
+        now = datetime.now(UTC)
+        first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        cutoff_str = first_day_of_month.strftime("%Y-%m-%dT%H:%M:%SZ")
+        
+        filters = Filter.by_property("created_at").greater_than(cutoff_str)
+        
+        new_users = search_non_vector_collection(
+            collection_name="Users",
+            filters=filters,
+            properties=["email", "name", "role", "created_at"],
+            sort=Sort.by_property("created_at", ascending=False),
+            limit=100  # Limit to 100 new users
+        )
+        
+        return new_users
+    except Exception as e:
+        print(f"Error getting new users list: {str(e)}")
+        raise UserError("Failed to get new users list", 500)
+    
+def count_new_users() -> int:
+    """Count new users in the current month - Admin only"""
+    try:
+        # Get the first day of the current month
+        now = datetime.now(UTC)
+        first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        cutoff_str = first_day_of_month.strftime("%Y-%m-%dT%H:%M:%SZ")
+        
+        filters = Filter.by_property("created_at").greater_than(cutoff_str)
+        
+        aggregate_result = get_aggregate(
+            collection_name=COLLECTION_USERS,
+            filters=filters
+        )
+        
+        return aggregate_result.total_count
+    except Exception as e:
+        print(f"Error counting new users: {str(e)}")
+        raise UserError("Failed to count new users", 500)
+    
+def get_active_users_list() -> List[Dict[str, Any]]:
+    """Get list of active users in the current month - Admin only"""
+    try:
+        # Get the first day of the current month
+        now = datetime.now(UTC)
+        first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        cutoff_str = first_day_of_month.strftime("%Y-%m-%dT%H:%M:%SZ")
+        
+        filters = Filter.by_property("last_login_at").greater_than(cutoff_str)
+        
+        active_users = search_non_vector_collection(
+            collection_name="Users",
+            filters=filters,
+            properties=["email", "name", "role", "last_login_at"],
+            sort=Sort.by_property("last_login_at", ascending=False),
+            limit=100  # Limit to 100 active users
+        )
+        
+        return active_users
+    except Exception as e:
+        print(f"Error getting active users list: {str(e)}")
+        raise UserError("Failed to get active users list", 500)
+    
+def count_active_users() -> int:
+    """Count active users in the current month - Admin only"""
+    try:
+        # Get the first day of the current month
+        now = datetime.now(UTC)
+        first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        cutoff_str = first_day_of_month.strftime("%Y-%m-%dT%H:%M:%SZ")
+        
+        filters = Filter.by_property("last_login_at").greater_than(cutoff_str)
+        
+        aggregate_result = get_aggregate(
+            collection_name=COLLECTION_USERS,
+            filters=filters
+        )
+        
+        return aggregate_result.total_count
+    except Exception as e:
+        print(f"Error counting active users: {str(e)}")
+        raise UserError("Failed to count active users", 500)
+    
+def get_retention_rate() -> float:
+    """Calculate user retention rate - Admin only"""
+    try:
+        # Get the first day of the current month
+        now = datetime.now(UTC)
+        first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        cutoff_str = first_day_of_month.strftime("%Y-%m-%dT%H:%M:%SZ")
+        
+        # Total users created before this month
+        total_users_before = get_aggregate(
+            collection_name=COLLECTION_USERS,
+            filters=Filter.by_property("created_at").less_than(cutoff_str)
+        ).total_count
+        
+        # Users active this month
+        active_users_this_month = get_aggregate(
+            collection_name=COLLECTION_USERS,
+            filters=Filter.by_property("last_login_at").greater_than(cutoff_str)
+        ).total_count
+        
+        if total_users_before == 0:
+            return 0.0
+        
+        retention_rate = (active_users_this_month / total_users_before) * 100.0
+        return round(retention_rate, 2)
+        
+    except Exception as e:
+        print(f"Error calculating retention rate: {str(e)}")
+        raise UserError("Failed to calculate retention rate", 500)
+    

@@ -63,4 +63,8 @@ from controllers.fine_tuning_model_controller import *
 from controllers.fine_tuning_controller import *
 from controllers.api_key_controller import *
 from controllers.tts_controller import *
+from controllers.social_controller import *
+from controllers.guess_controller import *
+from controllers.subscription_controller import *
+from controllers.stripe_controller import *
 

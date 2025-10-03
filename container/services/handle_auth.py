@@ -302,6 +302,7 @@ def sign_up(auth_request: AuthRequest) -> Dict[str, Any]:
         password=generate_password_hash(auth_request.password),
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
+        last_login_at=None,
         name=auth_request.name,
         role=auth_request.role if auth_request.role else UserRole.STUDENT.value
     )
@@ -314,7 +315,8 @@ def sign_up(auth_request: AuthRequest) -> Dict[str, Any]:
         "name": user.name,
         "role": user.role,
         "created_at": user.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "updated_at": user.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+        "updated_at": user.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "last_login_at": None
     }
     
     # Insert and get the UUID
@@ -371,7 +373,7 @@ def sign_in(auth_request: AuthRequest) -> Dict[str, Any]:
 def sign_in_with_social(social_id: str, email: str, name: str, role: Optional[str] = None) -> Dict[str, Any]:
     """Sign in or register a user using social login"""
     # Check if user already exists
-    user = get_user_by_social_id(social_id)
+    user = get_user_by_email(email)
     if not user:
         # Create new user
         user = User(
@@ -380,6 +382,7 @@ def sign_in_with_social(social_id: str, email: str, name: str, role: Optional[st
             password="",  # No password for social login
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
+            last_login_at=None,
             name=name,
             role=role if role else UserRole.STUDENT.value
         )
@@ -392,7 +395,8 @@ def sign_in_with_social(social_id: str, email: str, name: str, role: Optional[st
             "name": user.name,
             "role": user.role,
             "created_at": user.created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "updated_at": user.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+            "updated_at": user.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "last_login_at": None
         }
         
         # Insert and get the UUID

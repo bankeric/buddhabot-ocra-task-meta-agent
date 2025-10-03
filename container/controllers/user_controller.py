@@ -1,8 +1,11 @@
+from datetime import datetime, UTC
 from flask import request, jsonify, g
 from __init__ import app, login_required
+from services.handle_social import get_social_share
+from services.handle_subscription import count_subscription_in_month
 from services.handle_user import (
-    get_all_users, get_user_by_id, update_user, delete_user, 
-    check_user_permissions, UserError, get_user_stats, create_user
+    count_new_users, get_all_users, count_active_users, get_user_by_id, update_user, delete_user, 
+    check_user_permissions, UserError, get_user_stats, create_user, get_retention_rate
 )
 from data_classes.common_classes import UserRole
 
@@ -223,6 +226,7 @@ def get_current_user():
     """Get current user"""
     try:
         current_user = get_user_by_id(g.user_id)
+        update_user(g.user_id, {"last_login_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")})
         if not current_user:
             return jsonify({"error": "User not found"}), 404
         return jsonify({"user": current_user}), 200
@@ -253,4 +257,28 @@ def get_user_stats_endpoint():
         return jsonify({"error": e.message}), e.status_code
     except Exception as e:
         print(f"Error in get_user_stats: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+    
+@app.route('/api/v1/users/statistic', methods=['GET'])
+def get_user_statistics():
+    """Get user statistics - Admin only"""
+    try: 
+        new_users = count_new_users()
+        active_users = count_active_users()
+        retention_rate = get_retention_rate()
+        social_share = get_social_share()
+        subscription_count = count_subscription_in_month()
+        
+        return jsonify({
+            "new_users": new_users,
+            "active_users": active_users,
+            "retention_rate": retention_rate,
+            "social_share": social_share,
+            "subscriptions_this_month": subscription_count
+        }), 200
+
+    except UserError as e:
+        return jsonify({"error": e.message}), e.status_code
+    except Exception as e:
+        print(f"Error in get_user_statistics: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
