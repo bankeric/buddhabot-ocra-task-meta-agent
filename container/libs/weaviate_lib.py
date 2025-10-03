@@ -48,6 +48,9 @@ COLLECTION_AGENT_SETTINGS = "AgentSettings"
 COLLECTION_FINE_TUNING_MODELS = "FineTuningModels"
 COLLECTION_API_KEYS = "ApiKeys"
 COLLECTION_PASSWORD_RESET_TOKENS = "PasswordResetTokens"
+COLLECTION_SUBSCRIPTIONS = "Subscriptions"
+COLLECTION_SOCIAL_MEDIA = "SocialMedia"
+COLLECTION_GUESSES = "Guesses"
 
 def initialize_schema() -> None:
     """Initialize the Weaviate schema if it doesn't exist."""
@@ -225,8 +228,12 @@ def initialize_schema() -> None:
         users_collection = client.collections.get(COLLECTION_USERS)
 
         users_collection.config.add_property(
-            wvc.config.Property(name="social_id", data_type=wvc.config.DataType.TEXT),
+            wvc.config.Property(name="last_login_at", data_type=wvc.config.DataType.DATE),
         )
+
+        users_collection.config.add_property(
+                wvc.config.Property(name="social_id", data_type=wvc.config.DataType.TEXT),
+            )
  
     except Exception as e:
         print(f"Error adding thought property to Users collection: {e}")
@@ -326,7 +333,60 @@ def initialize_schema() -> None:
             ]
         )
         print("🙌🏼 Collection PasswordResetTokens created successfully")
+
+    # ----------------------------------------------------------
+    # Subscriptions COLLECTION
+    # ----------------------------------------------------------
+    exists = client.collections.exists(COLLECTION_SUBSCRIPTIONS)
+    if not exists:
+        client.collections.create(
+            name=COLLECTION_SUBSCRIPTIONS,
+            properties=[
+                wvc.config.Property(name="user_id", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="level", data_type=wvc.config.DataType.INT),
+                wvc.config.Property(name="tx_id", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="status", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="start_date", data_type=wvc.config.DataType.DATE),
+                wvc.config.Property(name="end_date", data_type=wvc.config.DataType.DATE),
+                wvc.config.Property(name="created_at", data_type=wvc.config.DataType.DATE),
+                wvc.config.Property(name="updated_at", data_type=wvc.config.DataType.DATE),
+            ]
+        )
+        print("🙌🏼 Collection Subscriptions created successfully")
+
+    # ----------------------------------------------------------
+    # Social MEDIA COLLECTION
+    # ----------------------------------------------------------
+    exists = client.collections.exists(COLLECTION_SOCIAL_MEDIA)
+    if not exists:
+        client.collections.create(
+            name=COLLECTION_SOCIAL_MEDIA,
+            properties=[
+                wvc.config.Property(name="platform", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="share_count", data_type=wvc.config.DataType.INT),
+                wvc.config.Property(name="created_at", data_type=wvc.config.DataType.DATE),
+                wvc.config.Property(name="updated_at", data_type=wvc.config.DataType.DATE),
+            ]
+        )
+        print("🙌🏼 Collection SocialMedia created successfully")
+
+
+    # ----------------------------------------------------------
+    # Guesses COLLECTION
+    # ----------------------------------------------------------
+    exists = client.collections.exists(COLLECTION_GUESSES)
+    if not exists:
+        client.collections.create(
+            name=COLLECTION_GUESSES,
+            properties=[
+                wvc.config.Property(name="ip", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="created_at", data_type=wvc.config.DataType.DATE)
+            ]
+        )
+        print("🙌🏼 Collection Guesses created successfully")
+
     print("🙌🏼 Schema initialized successfully")
+
 
 def upload_documents(documents: List[Dict[str, str]]) -> Dict[str, Any]:
     """

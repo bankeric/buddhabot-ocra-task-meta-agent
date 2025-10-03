@@ -16,3 +16,4 @@ langchain-core
 google-cloud-aiplatform
 pandas
 google-cloud-texttospeech
+stripe
