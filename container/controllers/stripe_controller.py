@@ -9,15 +9,26 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 @app.route("/api/v1/stripe/create-checkout-session", methods=["POST"])
 def create_checkout_session():
+
+    params = request.get_json()
+    currency = params.get("currency")
+    amount = params.get("amount")
+    product_name = params.get("product_name")
+
+    if(not currency or not amount or not product_name):
+        return jsonify(error="Missing required fields"), 400
+
     try:
+
+        print("Creating checkout session for:", product_name, amount, currency)
         session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
+            payment_method_types=["card"],  
             line_items=[
                 {
                     "price_data": {
-                        "currency": "vnd",
-                        "product_data": {"name": "Giac Ngo"},
-                        "unit_amount": 99000,  # 99,000 VND
+                        "currency": currency,
+                        "product_data": {"name": product_name},
+                        "unit_amount": amount,  
                     },
                     "quantity": 1,
                 }
