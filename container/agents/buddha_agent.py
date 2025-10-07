@@ -136,6 +136,7 @@ def get_default_buddha_agent(language: Language = Language.VI) -> Agent:
         language=language,
         model="gpt-4o",
         temperature=0,
+        level=1,
         uuid="buddha_agent",
         agent_type="buddha_agent",
         system_prompt=SYSTEM_PROMPT_VI if language == Language.VI else SYSTEM_PROMPT_EN

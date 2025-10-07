@@ -50,6 +50,7 @@ def get_agent(agent_id: str, language: Language) -> Agent:
         system_prompt=agent["system_prompt"],
         tools=agent["tools"],
         model=agent["model"],
+        level=1,
         temperature=agent["temperature"],
         language=agent["language"],
         created_at=agent["created_at"],
