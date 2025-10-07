@@ -15,11 +15,11 @@ def generate_openai_answer(
     stream: bool = False,
 ) -> str | Generator[StreamEvent, None, None]:
     try:
-        base_language = agent["language"] if agent else Language.VI
-        base_model = agent["model"] if agent else "gpt-4o"
-        base_temperature = agent["temperature"] if agent else 0
-        base_system_prompt = agent["system_prompt"] if agent else ""
-        
+        base_language = getattr(agent, "language", Language.VI.value)
+        base_model = getattr(agent, "model", "gpt-4o")
+        base_temperature = getattr(agent, "temperature", 0)
+        base_system_prompt = getattr(agent, "system_prompt", "")
+
         # Prepare the context from relevant documents
         context_text = "\n\n".join([
             f"Source: {ctx['title']}\nContent: {ctx['content']}"
