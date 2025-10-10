@@ -155,6 +155,7 @@ class File:
     author: Optional[str] = None
     
 class UserRole(Enum):
+    OWNER = "owner"
     ADMIN = "admin"
     STUDENT = "student"
     VIEWER = "viewer"
@@ -331,3 +332,6 @@ class CreateSubscriptionRequest:
     user_id: str
     tx_id: str
     level: int
+    status: str
+    start_date: str
+    ended_at: Optional[str] = None

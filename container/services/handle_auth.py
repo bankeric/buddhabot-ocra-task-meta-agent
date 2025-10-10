@@ -22,12 +22,13 @@ class AuthError(Exception):
         self.status_code = status_code
         super().__init__(self.message)
 
-def create_jwt_token(user_id: str) -> str:
+def create_jwt_token(user_id: str, role: str) -> str:
     """Create a JWT token for a user"""
     print('user_id:')
     print(user_id)
     payload = {
         'user_id': user_id,
+        'role': role,
         'exp': datetime.now(UTC) + JWT_EXPIRATION,
         'iat': datetime.now(UTC)
     }
@@ -332,7 +333,7 @@ def sign_up(auth_request: AuthRequest) -> Dict[str, Any]:
         
 
     # Generate token
-    token = create_jwt_token(user_id)
+    token = create_jwt_token(user_id, user.role)
     return {
         "token": token,
         "user": {
@@ -359,7 +360,7 @@ def sign_in(auth_request: AuthRequest) -> Dict[str, Any]:
     if not user_id:
         raise AuthError("Invalid user data", 500)
         
-    token = create_jwt_token(user_id)
+    token = create_jwt_token(user_id, user.get("role", UserRole.STUDENT.value))
     return {
         "token": token,
         "user": {
@@ -416,7 +417,7 @@ def sign_in_with_social(social_id: str, email: str, name: str, role: Optional[st
             raise AuthError("Invalid user data", 500)
 
     # Generate token
-    token = create_jwt_token(user_id)
+    token = create_jwt_token(user_id, user.get("role", UserRole.STUDENT.value))
     return {
         "token": token,
         "user": {

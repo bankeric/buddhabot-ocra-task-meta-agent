@@ -51,17 +51,14 @@ def get_one_subscription(user_id: str) -> dict | None:
 def create_subscription(params: CreateSubscriptionRequest) -> dict:
     """Create a new subscription."""
     try:
-        from libs.weaviate_lib import create_object
+        start_date = datetime.fromtimestamp(params.start_date, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        end_date = datetime.fromtimestamp(params.ended_at, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-
-        start_date = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-        end_date = (params.start_date.replace(hour=0, minute=0, second=0, microsecond=0) + 
-                    timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
-
+        print(f"Creating subscription for user {params.user_id} with tx_id {params.tx_id}, level {params.level}, start_date {start_date}, end_date {end_date}")
         data = {
             "user_id": params.user_id,
             "level": params.level,
-            "status": SubscriptionStatus.ACTIVE,
+            "status": params.status,
             "start_date": start_date,
             "end_date": end_date,
             "tx_id": params.tx_id

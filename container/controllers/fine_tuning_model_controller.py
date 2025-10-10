@@ -1,5 +1,5 @@
 from flask import request, jsonify, g
-from __init__ import app, login_required
+from __init__ import app, login_required, admin_required
 from services.handle_fine_tuning_models import (
     get_all_fine_tuning_models, get_fine_tuning_model_by_id, update_fine_tuning_model, 
     delete_fine_tuning_model, check_fine_tuning_model_permissions, FineTuningModelError, 
@@ -10,7 +10,7 @@ from data_classes.common_classes import FineTuningStatus, Language
 
 
 @app.route('/api/v1/fine-tuning-models', methods=['POST'])
-@login_required
+@admin_required
 def create_fine_tuning_model_endpoint():
     """Create a new fine-tuning model"""
     try:
@@ -65,7 +65,7 @@ def create_fine_tuning_model_endpoint():
 
 
 @app.route('/api/v1/fine-tuning-models', methods=['GET'])
-@login_required
+@admin_required
 def get_fine_tuning_models():
     """Get list of fine-tuning models"""
     try:
@@ -117,7 +117,7 @@ def get_fine_tuning_models():
 
 
 @app.route('/api/v1/fine-tuning-models/<model_id>', methods=['GET'])
-@login_required
+@admin_required
 def get_fine_tuning_model(model_id):
     """Get single fine-tuning model by ID"""
     try:
@@ -145,7 +145,7 @@ def get_fine_tuning_model(model_id):
 
 
 @app.route('/api/v1/fine-tuning-models/<model_id>', methods=['PUT'])
-@login_required
+@admin_required
 def update_fine_tuning_model_endpoint(model_id):
     """Update fine-tuning model by ID"""
     try:
@@ -209,7 +209,7 @@ def update_fine_tuning_model_endpoint(model_id):
 
 
 @app.route('/api/v1/fine-tuning-models/<model_id>', methods=['DELETE'])
-@login_required
+@admin_required
 def delete_fine_tuning_model_endpoint(model_id):
     """Delete fine-tuning model by ID"""
     try:
@@ -239,7 +239,7 @@ def delete_fine_tuning_model_endpoint(model_id):
 
 
 @app.route('/api/v1/fine-tuning-models/stats', methods=['GET'])
-@login_required
+@admin_required
 def get_fine_tuning_model_stats_endpoint():
     """Get statistics about fine-tuning models - Admin only"""
     try:
@@ -267,7 +267,7 @@ def get_fine_tuning_model_stats_endpoint():
 
 
 @app.route('/api/v1/fine-tuning-models/statuses', methods=['GET'])
-@login_required
+@admin_required
 def get_fine_tuning_statuses():
     """Get available fine-tuning statuses"""
     try:
@@ -281,7 +281,7 @@ def get_fine_tuning_statuses():
 
 
 @app.route('/api/v1/fine-tuning-models/languages', methods=['GET'])
-@login_required
+@admin_required
 def get_fine_tuning_languages():
     """Get available languages for fine-tuning models"""
     try:

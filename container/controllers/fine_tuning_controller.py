@@ -3,7 +3,7 @@ Fine-tuning controller for handling fine-tuning requests.
 """
 
 from flask import request, jsonify, g
-from __init__ import app, login_required
+from __init__ import app, login_required, admin_required
 from services.handle_messages import fine_tune_messages, get_messages_list
 from services.handle_fine_tuning_models import get_fine_tuning_model_by_id, update_fine_tuning_model, FineTuningModelError
 from data_classes.common_classes import FineTuningStatus, ApprovalStatus
@@ -13,7 +13,7 @@ from libs.google_vertex import get_fine_tuning_job_list, upload_to_gcs
 logger = logging.getLogger(__name__)
 
 @app.route('/api/v1/fine-tuning/start', methods=['POST'])
-@login_required
+@admin_required
 def start_fine_tuning():
     """Start a fine-tuning job with selected messages"""
     try:
@@ -108,7 +108,7 @@ def start_fine_tuning():
 
 
 @app.route('/api/v1/fine-tuning/jobs', methods=['GET'])
-@login_required
+@admin_required
 def list_fine_tuning_jobs():
     """List all fine-tuning jobs"""
     try:
