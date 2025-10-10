@@ -1,6 +1,6 @@
 from datetime import datetime, UTC
 from warnings import filters
-from libs.weaviate_lib import search_non_vector_collection, update_collection_object, insert_to_collection
+from libs.weaviate_lib import search_non_vector_collection, update_collection_object, insert_to_collection, delete_collection_objects_many
 from weaviate.classes.query import Filter
 
 class GuessError(Exception):
@@ -31,4 +31,9 @@ def store_ip_guess(ip_address: str) -> None:
     }
     insert_to_collection("Guesses", guess_data)
 
-  
+# remove data from ip
+def remove_ip_guesses(ip_address: str) -> None:
+    """Remove all guesses made by an IP address"""
+    filters = Filter.by_property("ip").equal(ip_address)
+    delete_collection_objects_many("Guesses", filters=filters)
+    
