@@ -36,6 +36,11 @@ def create_checkout_session():
             metadata={
                 "user_id": g.user_id
             },
+            subscription_data={
+                "metadata": {
+                    "user_id": g.user_id
+                }
+            },  
             mode="subscription",
             success_url=os.getenv("FRONTEND_URL") + "/payment/success",
             cancel_url=os.getenv("FRONTEND_URL") + "/payment/cancel",
@@ -81,7 +86,6 @@ def stripe_webhook():
 
     elif event["type"] == "customer.subscription.created":
         subscription = event["data"]["object"]
-        print(f"Subscription: {subscription}")
         create_subscription(
             params=(create_subscription_request := CreateSubscriptionRequest(
                 user_id=subscription['metadata']['user_id'] if 'metadata' in subscription and 'user_id' in subscription['metadata'] else 'unknown',
