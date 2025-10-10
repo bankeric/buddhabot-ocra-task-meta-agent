@@ -11,12 +11,12 @@ from services.handle_agent_settings import (
 )
 import logging
 
-from __init__ import app, login_required
+from __init__ import app, login_required, admin_required, contributor_required
 
 logger = logging.getLogger(__name__)
 
 @app.route('/api/v1/agent-settings', methods=['POST'])
-@login_required
+@admin_required
 def create_agent_setting_endpoint():
     """Create a new agent setting"""
     try:
@@ -46,7 +46,7 @@ def create_agent_setting_endpoint():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/agent-settings', methods=['GET'])
-@login_required
+@contributor_required
 def list_agent_settings_endpoint():
     """List all agent settings, optionally filtered by agent_id"""
     try:
@@ -79,7 +79,7 @@ def get_agent_setting_endpoint(setting_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/agents/<agent_id>/settings/<key>', methods=['GET'])
-@login_required
+@contributor_required
 def get_agent_setting_by_key_endpoint(agent_id, key):
     """Get a specific agent setting by agent_id and key"""
     try:
@@ -94,7 +94,7 @@ def get_agent_setting_by_key_endpoint(agent_id, key):
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/agent-settings/<setting_id>', methods=['PUT'])
-@login_required
+@admin_required
 def update_agent_setting_endpoint(setting_id):
     """Update an agent setting"""
     try:
@@ -118,7 +118,7 @@ def update_agent_setting_endpoint(setting_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/agent-settings/<setting_id>', methods=['DELETE'])
-@login_required
+@admin_required
 def delete_agent_setting_endpoint(setting_id):
     """Delete an agent setting"""
     try:
@@ -133,7 +133,7 @@ def delete_agent_setting_endpoint(setting_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/agents/<agent_id>/settings', methods=['DELETE'])
-@login_required
+@admin_required
 def delete_agent_settings_by_agent_endpoint(agent_id):
     """Delete all settings for a specific agent"""
     try:
@@ -148,7 +148,7 @@ def delete_agent_settings_by_agent_endpoint(agent_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/agent-settings/search', methods=['GET'])
-@login_required
+@contributor_required
 def search_agent_settings_endpoint():
     """Search for agent settings"""
     try:

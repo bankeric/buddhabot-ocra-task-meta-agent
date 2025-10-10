@@ -6,10 +6,10 @@ from weaviate.classes.query import Filter
 from weaviate.collections.classes.grpc import Sort
 import uuid
 from libs.weaviate_lib import COLLECTION_USERS
-from data_classes.common_classes import UserRole, User
-import asyncio
+from data_classes.common_classes import UserRole
 from concurrent.futures import ThreadPoolExecutor
-import threading
+from services.handle_permissions import check_user_permissions_by_update_role
+
 
 class UserError(Exception):
     def __init__(self, message: str, status_code: int = 400):
@@ -117,6 +117,17 @@ def update_user(user_id: str, user_data: Dict[str, Any]) -> bool:
         existing_user = get_user_by_id(user_id)
         if not existing_user:
             raise UserError("User not found", 404)
+        
+        # if update user role, need to check the permission of the current user, TODO: enable later
+        # target_role = user_data.get("role")
+        # if "role" in user_data and target_role not in [role.value for role in UserRole]:
+        #     raise UserError("Invalid user role", 400)
+        
+        # Check permissions if role is being updated, TODO: enable later
+        # if target_role:
+        #     roleValid = check_user_permissions_by_update_role(user_id, target_role)
+        #     if not roleValid:
+        #         raise UserError("Insufficient permissions to update role", 403)
 
         # Hash password if provided
         if "password" in user_data and user_data["password"]:
@@ -199,6 +210,7 @@ def check_user_permissions(current_user_id: str, target_user_id: str = None, act
     except Exception as e:
         print(f"Error checking user permissions: {str(e)}")
         return False
+    
 
 def create_admin_user(email: str, password: str, name: str = None) -> str:
     """Create an admin user (for testing/initial setup)"""

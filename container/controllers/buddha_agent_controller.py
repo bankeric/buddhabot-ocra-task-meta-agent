@@ -8,13 +8,13 @@ from data_classes.common_classes import Message, Language, AppMessageResponse
 import json
 from datetime import datetime
 import logging
-from __init__ import app, login_required
+from __init__ import app, login_required, owner_required
 
 logger = logging.getLogger(__name__)
 
 
 @app.route('/api/v1/buddha-agent-builder/chat', methods=['POST'])
-@login_required
+@owner_required
 def meta_agent_chat_endpoint():
     """Chat with the buddha agent builder - streaming response"""
     try:
@@ -91,7 +91,7 @@ def meta_agent_chat_endpoint():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/buddha-agent-builder/chat/sync', methods=['POST'])
-@login_required
+@owner_required
 def buddha_agent_builder_chat_sync_endpoint():
     """Chat with the buddha agent builder - synchronous response (backward compatibility)"""
     try:

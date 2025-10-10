@@ -18,6 +18,7 @@ def create_agent(
     temperature: float = 0, 
     author: str = "system", 
     language: str = "en",
+    tags: Optional[List[str]] = None
 ) -> Dict[str, Any]:
     """
     Create a new AI agent with the specified configuration.
@@ -48,7 +49,8 @@ def create_agent(
             "updated_at": datetime.now(),
             "author": author,
             "status": AgentStatus.ACTIVE.value,
-            "language": language
+            "language": language,
+            "tags": json.dumps(tags) if tags else json.dumps([]),
         }
         
         # Store in Weaviate
@@ -64,7 +66,7 @@ def create_agent(
     except Exception as e:
         return {"error": f"Failed to create agent: {str(e)}"}
 
-def list_agents(author: str = "system", limit: int = 10, language: Optional[str] = None, status: Optional[str] = None) -> List[Dict[str, Any]]:
+def list_agents(author: str = "system", limit: int = 10, language: Optional[str] = None, status: Optional[str] = None, tags: Optional[List[str]] = None) -> List[Dict[str, Any]]:
     """
     List all agents created by a specific author.
     
@@ -104,6 +106,10 @@ def list_agents(author: str = "system", limit: int = 10, language: Optional[str]
         agents = []
         for obj in response.objects:
             agent_data = obj.properties
+            if tags and obj.properties.get("tags"):
+                agent_tags = json.loads(obj.properties["tags"])
+                if not any(tag in agent_tags for tag in tags):
+                    continue
             agent_data["uuid"] = obj.uuid
             agent_data["conversation_starters"] = json.loads(agent_data["conversation_starters"]) if agent_data["conversation_starters"] else []
             agent_data["tags"] = json.loads(agent_data["tags"]) if agent_data["tags"] else []

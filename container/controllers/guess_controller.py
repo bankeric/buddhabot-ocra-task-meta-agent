@@ -2,7 +2,7 @@
 from asyncio.log import logger
 from __init__ import app
 from flask import  Response, json, request, jsonify, g
-from data_classes.common_classes import AskRequest, Language
+from data_classes.common_classes import AskRequest, Language, Message
 from services.handle_ask import AskError, handle_ask_non_streaming, handle_ask_streaming
 from services.handle_guess import GuessError, store_ip_guess
 
@@ -23,35 +23,33 @@ def guess_ask(session_id):
         # 2. store guess
         store_ip_guess(ip_address)
 
-        # messages = [Message(**msg) for msg in body.get('messages', [])]
-        # ask_request = AskRequest(
-        #     messages=messages,
-        #     session_id=session_id,
-        #     language=body.get('language', Language.VI),
-        #     options=body.get('options'),
-        #     model=body.get('model', 'gpt-4o'),
-        #     agent_id=body.get('agent_id'),
-        #     context=body.get('context'),
-        # )
-        # # session_id
-        # if not session_id:
-        #     raise AskError("Session ID is required")
-        # # 2. handle request
-        # is_streaming = ask_request.options and ask_request.options.get("stream", False)
-        # try:
-        #     if is_streaming:
-        #         return handle_ask_streaming(ask_request, False)
-        #     else:
-        #         results = handle_ask_non_streaming(ask_request)
-        #         return jsonify(results), 200
-        # except AskError as e:
-        #     return Response(
-        #         response=json.dumps({"error": e.message}),
-        #         status=e.status_code,
-        #         mimetype="application/json"
-        #     )
-
-        return jsonify({"message": "Guess stored successfully"}), 200
+        messages = [Message(**msg) for msg in body.get('messages', [])]
+        ask_request = AskRequest(
+            messages=messages,
+            session_id=session_id,
+            language=body.get('language', Language.VI),
+            options=body.get('options'),
+            model=body.get('model', 'gpt-4o'),
+            agent_id=body.get('agent_id'),
+            context=body.get('context'),
+        )
+        # session_id
+        if not session_id:
+            raise AskError("Session ID is required")
+        # 2. handle request
+        is_streaming = ask_request.options and ask_request.options.get("stream", False)
+        try:
+            if is_streaming:
+                return handle_ask_streaming(ask_request, False)
+            else:
+                results = handle_ask_non_streaming(ask_request)
+                return jsonify(results), 200
+        except AskError as e:
+            return Response(
+                response=json.dumps({"error": e.message}),
+                status=e.status_code,
+                mimetype="application/json"
+            )
     except Exception as e:
         logger.error(f"Error processing ask: {str(e)}")
         return Response(

@@ -2,13 +2,13 @@ from flask import request, jsonify, g
 from werkzeug.datastructures import FileStorage
 from libs.google_vertex import add_file, remove_file, get_files, read_one_file
 from services.handle_agent import get_agent_by_id
-from __init__ import app, login_required
+from __init__ import app, login_required, admin_required
 import logging
 
 logger = logging.getLogger(__name__)
 
 @app.route('/api/v1/rag/files', methods=['POST'])
-@login_required
+@admin_required
 def upload_rag_file():
     """Upload a file to RAG corpus"""
     try:
@@ -45,7 +45,7 @@ def upload_rag_file():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/rag/files', methods=['GET'])
-@login_required
+@admin_required
 def list_rag_files():
     """List all files in RAG corpus"""
     try:
@@ -87,7 +87,7 @@ def list_rag_files():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/rag/files/<file_id>', methods=['GET'])
-@login_required
+@admin_required
 def read_rag_file(file_id):
     """Read content of a specific file from RAG corpus"""
     try:
@@ -112,7 +112,7 @@ def read_rag_file(file_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/rag/files/<file_name>', methods=['DELETE'])
-@login_required
+@admin_required
 def delete_rag_file(file_name):
     """Delete a file from RAG corpus"""
     try:

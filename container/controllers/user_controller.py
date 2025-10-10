@@ -1,6 +1,7 @@
 from datetime import datetime, UTC
 from flask import request, jsonify, g
-from __init__ import app, login_required
+from __init__ import admin_required, app, login_required
+from services.handle_permissions import check_permissions_to_delete_user
 from services.handle_social import get_social_share
 from services.handle_subscription import count_subscription_in_month
 from services.handle_user import (
@@ -71,7 +72,7 @@ def create_user_endpoint():
         return jsonify({"error": "Internal server error"}), 500
 
 @app.route('/api/v1/users', methods=['GET'])
-@login_required
+@admin_required
 def get_users():
     """Get list of users - Admin only"""
     try:
@@ -79,10 +80,6 @@ def get_users():
         current_user = get_user_by_id(g.user_id)
         if not current_user:
             return jsonify({"error": "User not found"}), 404
-
-        # Check if user has permission to list users
-        if not check_user_permissions(current_user["uuid"], action="list"):
-            return jsonify({"error": "Insufficient permissions"}), 403
 
         # Get query parameters for pagination
         limit = request.args.get('limit', 100, type=int)
@@ -109,7 +106,7 @@ def get_users():
         return jsonify({"error": "Internal server error"}), 500
 
 @app.route('/api/v1/users/<user_id>', methods=['GET'])
-@login_required
+@admin_required
 def get_user(user_id):
     """Get single user by ID"""
     try:
@@ -117,11 +114,6 @@ def get_user(user_id):
         current_user = get_user_by_id(g.user_id)
         if not current_user:
             return jsonify({"error": "User not found"}), 404
-
-        # Check if user has permission to read this user
-        if not check_user_permissions(current_user["uuid"], user_id, "read"):
-            return jsonify({"error": "Insufficient permissions"}), 403
-
         # Get user
         user = get_user_by_id(user_id)
         if not user:
@@ -136,7 +128,7 @@ def get_user(user_id):
         return jsonify({"error": "Internal server error"}), 500
 
 @app.route('/api/v1/users/<user_id>', methods=['PUT'])
-@login_required
+@admin_required
 def update_user_endpoint(user_id):
     """Update user by ID"""
     try:
@@ -144,10 +136,6 @@ def update_user_endpoint(user_id):
         current_user = get_user_by_id(g.user_id)
         if not current_user:
             return jsonify({"error": "User not found"}), 404
-
-        # Check if user has permission to update this user
-        if not check_user_permissions(current_user["uuid"], user_id, "update"):
-            return jsonify({"error": "Insufficient permissions"}), 403
 
         # Get request data
         data = request.get_json()
@@ -161,10 +149,6 @@ def update_user_endpoint(user_id):
         for field in allowed_fields:
             if field in data:
                 update_data[field] = data[field]
-
-        # Only admins can change role
-        if ("role" in update_data) and not current_user.get("role", UserRole.VIEWER.value) == UserRole.ADMIN.value:
-            return jsonify({"error": "Only admins can change role"}), 403
 
         if not update_data:
             return jsonify({"error": "No valid fields to update"}), 400
@@ -189,7 +173,7 @@ def update_user_endpoint(user_id):
         return jsonify({"error": "Internal server error"}), 500
 
 @app.route('/api/v1/users/<user_id>', methods=['DELETE'])
-@login_required
+@admin_required
 def delete_user_endpoint(user_id):
     """Delete user by ID"""
     try:
@@ -198,13 +182,14 @@ def delete_user_endpoint(user_id):
         if not current_user:
             return jsonify({"error": "User not found"}), 404
 
-        # Check if user has permission to delete this user
-        if not check_user_permissions(current_user["uuid"], user_id, "delete"):
-            return jsonify({"error": "Insufficient permissions"}), 403
+        is_permission_valid = check_permissions_to_delete_user(
+            current_user_role=current_user["role"],
+            target_user_role=get_user_by_id(user_id)["role"] if get_user_by_id(user_id) else '',
+            is_self_deletion=(current_user["uuid"] == user_id)
+        )
 
-        # Prevent user from deleting themselves
-        if current_user["uuid"] == user_id:
-            return jsonify({"error": "Cannot delete your own account"}), 400
+        if not is_permission_valid:
+            return jsonify({"error": "Insufficient permissions to delete user"}), 403
 
         # Delete user
         success = delete_user(user_id)
@@ -281,4 +266,33 @@ def get_user_statistics():
         return jsonify({"error": e.message}), e.status_code
     except Exception as e:
         print(f"Error in get_user_statistics: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+    
+# Add one time endpoint to set owner 
+@app.route('/api/v1/users/set_owner/<user_id>', methods=['PUT'])
+def set_owner(user_id):
+    """Set initial owner user - One time use"""
+    try:
+        # Check if any owner already exists
+        user = get_user_by_id(user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        # Set user as owner
+        success = update_user(user_id, {"role": UserRole.OWNER.value})
+        if not success:
+            return jsonify({"error": "Failed to set user as owner"}), 500
+
+        # Get updated user
+        updated_user = get_user_by_id(user_id)
+        
+        return jsonify({
+            "message": "User set as owner successfully",
+            "user": updated_user
+        }), 200
+
+    except UserError as e:
+        return jsonify({"error": e.message}), e.status_code
+    except Exception as e:
+        print(f"Error in set_owner: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500

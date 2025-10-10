@@ -1,12 +1,12 @@
 from flask import request, jsonify, g
 from libs.google_vertex import add_corpus, get_corpus, delete_corpus, list_corpora
-from __init__ import app, login_required
+from __init__ import app, login_required, admin_required
 import logging
 
 logger = logging.getLogger(__name__)
 
 @app.route('/api/v1/rag/corpus', methods=['GET'])
-@login_required
+@admin_required
 def list_corpora_endpoint():
     """List all RAG corpora"""
     try:
@@ -30,7 +30,7 @@ def list_corpora_endpoint():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/rag/corpus', methods=['POST'])
-@login_required
+@admin_required
 def create_corpus():
     """Create a new RAG corpus"""
     try:
@@ -56,7 +56,7 @@ def create_corpus():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/rag/corpus/<corpus_id>', methods=['GET'])
-@login_required
+@admin_required
 def get_corpus_info(corpus_id):
     """Get information about a specific RAG corpus"""
     try:
@@ -76,7 +76,7 @@ def get_corpus_info(corpus_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/rag/corpus/<corpus_id>', methods=['DELETE'])
-@login_required
+@admin_required
 def delete_corpus_endpoint(corpus_id):
     """Delete a RAG corpus"""
     try:

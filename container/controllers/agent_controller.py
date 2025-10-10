@@ -16,12 +16,12 @@ import uuid
 import asyncio
 from data_classes.common_classes import AskRequest, Message, Language
 
-from __init__ import app, login_required
+from __init__ import admin_required, app, login_required, contributor_required, owner_required
 
 logger = logging.getLogger(__name__)
 
 @app.route('/api/v1/agents', methods=['POST'])
-@login_required
+@owner_required
 def create_agent_endpoint():
     """Create a new agent"""
     try:
@@ -48,9 +48,24 @@ def create_agent_endpoint():
     except Exception as e:
         logger.error(f"Error creating agent: {str(e)}")
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/v1/agents/public', methods=['GET'])
+def list_public_agents_endpoint():
+    """List all public agents"""
+    try:
+        limit = int(request.args.get('limit', 10))
+        language = request.args.get('language')
+        status = request.args.get('status')
+
+        agents = list_agents(limit=limit, language=language, status=status, tags=["public"])
+        # agents = list_assistants()
+        return jsonify(agents), 200
+    except Exception as e:
+        logger.error(f"Error listing agents: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/agents', methods=['GET'])
-@login_required
+@contributor_required
 def list_agents_endpoint():
     """List all agents for the current user"""
     try:
@@ -66,7 +81,7 @@ def list_agents_endpoint():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/agents/<agent_id>', methods=['GET'])
-@login_required
+@contributor_required
 def get_agent_endpoint(agent_id):
     """Get a specific agent"""
     try:
@@ -79,7 +94,7 @@ def get_agent_endpoint(agent_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/agents/<agent_id>', methods=['PUT'])
-@login_required
+@admin_required
 def update_agent_endpoint(agent_id):
     """Update an agent"""
     try:
@@ -91,7 +106,7 @@ def update_agent_endpoint(agent_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/agents/<agent_id>', methods=['DELETE'])
-@login_required
+@owner_required
 def delete_agent_endpoint(agent_id):
     """Delete an agent"""
     try:
@@ -102,7 +117,7 @@ def delete_agent_endpoint(agent_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/agents/search', methods=['GET'])
-@login_required
+@contributor_required
 def search_agents_endpoint():
     """Search for agents"""
     try:
@@ -116,7 +131,7 @@ def search_agents_endpoint():
 
 
 @app.route('/api/v1/agents/<agent_id>/test', methods=['POST'])
-@login_required
+@admin_required
 def test_agent_endpoint(agent_id):
     """Test an agent with sample input"""
     try:
@@ -209,7 +224,7 @@ def chat_with_agent_endpoint_with_api_key():
 
 
 @app.route('/api/v1/agents/<agent_id>/upload', methods=['POST'])
-@login_required
+@contributor_required
 def upload_file_endpoint(agent_id):
     """Upload a file to an agent with streaming progress updates"""
     try:

@@ -47,6 +47,80 @@ def login_required(f):
 
     return decorated_function
 
+def owner_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"error": "No authorization header"}), 401
+
+        try:
+            token = auth_header.split(" ")[1]
+            payload = verify_jwt_token(token)
+            role = payload.get('role', None)
+            if role != UserRole.OWNER.value:
+                return jsonify({"error": "Owner access required"}), 403
+            g.user_id = payload['user_id']
+            g.api_key_id = None
+            g.permissions = []
+            return f(*args, **kwargs)
+        except AuthError as e:
+            return jsonify({"error": e.message}), e.status_code
+        except Exception as e:
+            return jsonify({"error": "Invalid authorization"}), 401
+
+    return decorated_function
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"error": "No authorization header"}), 401
+
+        try:
+            token = auth_header.split(" ")[1]
+            payload = verify_jwt_token(token)
+            role = payload.get('role', None)
+            if role != UserRole.ADMIN.value and role != UserRole.OWNER.value:
+                return jsonify({"error": "Admin access required"}), 403
+            g.user_id = payload['user_id']
+            g.api_key_id = None
+            g.permissions = []
+            return f(*args, **kwargs)
+        except AuthError as e:
+            return jsonify({"error": e.message}), e.status_code
+        except Exception as e:
+            return jsonify({"error": "Invalid authorization"}), 401
+
+    return decorated_function
+
+def contributor_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"error": "No authorization header"}), 401
+
+        try:
+            token = auth_header.split(" ")[1]
+            payload = verify_jwt_token(token)
+            role = payload.get('role', None)
+            print(role)
+            if role != UserRole.CONTRIBUTOR.value and role != UserRole.ADMIN.value and role != UserRole.OWNER.value:
+                return jsonify({"error": "Contributor access required"}), 403
+            g.user_id = payload['user_id']
+            g.api_key_id = None
+            g.permissions = []
+            return f(*args, **kwargs)
+        except AuthError as e:
+            return jsonify({"error": e.message}), e.status_code
+        except Exception as e:
+            return jsonify({"error": "Invalid authorization"}), 401
+
+    return decorated_function
+
+
 from controllers.auth_controller import *
 from controllers.document_controller import *
 from controllers.section_controller import *
