@@ -89,3 +89,15 @@ def basic_openai_answer(query: str, model: str = "gpt-4o", temperature: float = 
         return result
     except Exception as e:
         raise Exception(f"Error generating answer: {e}")
+
+def create_voice_chat_session(model: str, instruction: str) -> str:
+    # Gọi API để tạo session (ephemeral key, session id, WebRTC URLs)
+    ephemeral_key_response = client.realtime.client_secrets.create(
+        session={
+            "type": "realtime",
+            "model": model,
+            "instructions": instruction
+        }
+    )
+
+    return ephemeral_key_response.to_dict()

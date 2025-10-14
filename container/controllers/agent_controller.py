@@ -1,4 +1,5 @@
 from flask import request, jsonify, g, Response, stream_with_context
+from libs.open_ai import create_voice_chat_session
 from services.handle_agent import (
     create_agent,
     list_agents,
@@ -287,3 +288,19 @@ def upload_file_endpoint(agent_id):
             "status": "error",
             "message": f"Upload failed: {str(e)}"
         }), 500
+    
+@app.route("/api/v1/agents/voice", methods=["POST"])
+@login_required
+def create_voice_chat_session_endpoint():
+    """Create a voice chat session for the agent"""
+    try:
+
+        body = request.get_json()
+        model = body.get("model", "gpt-4o-realtime-preview")
+        instruction = body.get("instruction", "You are a helpful assistant")
+
+        session_info = create_voice_chat_session(model=model, instruction=instruction)
+        return jsonify(session_info), 200
+    except Exception as e:
+        logger.error(f"Error creating voice chat session: {str(e)}")
+        return jsonify({"error": str(e)}), 500
