@@ -51,6 +51,11 @@ COLLECTION_PASSWORD_RESET_TOKENS = "PasswordResetTokens"
 COLLECTION_SUBSCRIPTIONS = "Subscriptions"
 COLLECTION_SOCIAL_MEDIA = "SocialMedia"
 COLLECTION_GUESSES = "Guesses"
+COLLECTION_FEEDS = "Feeds"
+COLLECTION_FEED_COMMENTS = "FeedComments"
+COLLECTION_STORIES = "Stories"
+COLLECTION_CATEGORIES = "Categories"
+
 
 def initialize_schema() -> None:
     """Initialize the Weaviate schema if it doesn't exist."""
@@ -384,6 +389,82 @@ def initialize_schema() -> None:
             ]
         )
         print("🙌🏼 Collection Guesses created successfully")
+
+    # ----------------------------------------------------------
+    # Feeds COLLECTION
+    # ----------------------------------------------------------
+    exists = client.collections.exists(COLLECTION_FEEDS)
+    if not exists:
+        client.collections.create(
+            name=COLLECTION_FEEDS,
+            properties=[
+                wvc.config.Property(name="user_id", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="content", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="agent_id", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="agent_content", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="like_ids", data_type=wvc.config.DataType.TEXT_ARRAY),
+                wvc.config.Property(name="retweet_ids", data_type=wvc.config.DataType.TEXT_ARRAY),
+                wvc.config.Property(name="type", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="created_at", data_type=wvc.config.DataType.DATE),
+                wvc.config.Property(name="updated_at", data_type=wvc.config.DataType.DATE),
+            ]
+        )
+        print("🙌🏼 Collection Feeds created successfully")
+
+    # ----------------------------------------------------------
+    # FeedComments COLLECTION
+    # ----------------------------------------------------------
+    exists = client.collections.exists(COLLECTION_FEED_COMMENTS)
+    if not exists:
+        client.collections.create(
+            name=COLLECTION_FEED_COMMENTS,
+            properties=[
+                wvc.config.Property(name="feed_id", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="user_id", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="content", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="like_ids", data_type=wvc.config.DataType.TEXT_ARRAY),
+                wvc.config.Property(name="created_at", data_type=wvc.config.DataType.DATE),
+                wvc.config.Property(name="updated_at", data_type=wvc.config.DataType.DATE),
+            ]
+        )
+        print("🙌🏼 Collection FeedComments created successfully")
+
+    # ----------------------------------------------------------
+    # Categories COLLECTION
+    # ----------------------------------------------------------
+    exists = client.collections.exists(COLLECTION_CATEGORIES)
+    if not exists:
+        client.collections.create(
+            name=COLLECTION_CATEGORIES,
+            properties=[
+                wvc.config.Property(name="name", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="description", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="created_at", data_type=wvc.config.DataType.DATE),
+                wvc.config.Property(name="updated_at", data_type=wvc.config.DataType.DATE),
+            ]
+        )
+        print("🙌🏼 Collection Categories created successfully")
+
+    # ----------------------------------------------------------
+    # Stories COLLECTION
+    # ----------------------------------------------------------
+    exists = client.collections.exists(COLLECTION_STORIES)
+    if not exists:
+        client.collections.create(
+            name=COLLECTION_STORIES,
+            properties=[
+                wvc.config.Property(name="author", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="title", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="category_id", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="content", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="type", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="language", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="status", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="created_at", data_type=wvc.config.DataType.DATE),
+                wvc.config.Property(name="updated_at", data_type=wvc.config.DataType.DATE),
+            ]
+        )
+        print("🙌🏼 Collection Stories created successfully")
 
     print("🙌🏼 Schema initialized successfully")
 

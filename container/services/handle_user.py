@@ -64,7 +64,7 @@ def get_all_users(limit: int = 100, offset: int = 0, search: str = "") -> List[D
             collection_name="Users",
             limit=limit,
             offset=offset,
-            properties=["email", "name", "role", "created_at", "updated_at"],
+            properties=["email", "name", "role", "created_at", "updated_at", "last_login_at"],
             sort=sort,
             filters=filters
         )
