@@ -2,7 +2,7 @@ import json
 from typing import List, Dict, Any, Optional
 from langchain_core.prompts import ChatPromptTemplate
 from libs.weaviate_lib import client, insert_to_collection, update_collection_object, delete_collection_object, COLLECTION_AGENTS
-from datetime import datetime
+from datetime import datetime, UTC
 import uuid
 import weaviate.classes as wvc
 from data_classes.common_classes import AgentStatus, AgentProvider
@@ -45,8 +45,8 @@ def create_agent(
             "tools": json.dumps(tools),
             "model": model,
             "temperature": temperature,
-            "created_at": datetime.now(),
-            "updated_at": datetime.now(),
+            "created_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "updated_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "author": author,
             "status": AgentStatus.ACTIVE.value,
             "language": language,

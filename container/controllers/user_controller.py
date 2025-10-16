@@ -269,7 +269,7 @@ def get_user_statistics():
         return jsonify({"error": "Internal server error"}), 500
     
 # Add one time endpoint to set owner 
-@app.route('/api/v1/users/set_owner/<user_id>', methods=['PUT'])
+@app.route('/api/v1/users/set-owner/<user_id>', methods=['PUT'])
 def set_owner(user_id):
     """Set initial owner user - One time use"""
     try:

@@ -335,3 +335,30 @@ class CreateSubscriptionRequest:
     status: str
     start_date: str
     ended_at: Optional[str] = None
+
+class FeedType(Enum):
+    POST = "post"
+    RETWEET = "retweet"
+
+@dataclass
+class CreateFeedRequest:
+    user_id: str
+    content: str
+    agent_id: str
+    agent_content: str
+
+
+@dataclass
+class CreateCommentFeedRequest:
+    user_id: str
+    feed_id: str
+    content: str
+@dataclass
+class CreateStoryRequest:
+    author: str
+    title: str
+    content: str
+    type: str
+    language: str
+    category_id: str
+    status: str

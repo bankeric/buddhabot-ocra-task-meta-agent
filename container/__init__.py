@@ -141,4 +141,8 @@ from controllers.social_controller import *
 from controllers.guess_controller import *
 from controllers.subscription_controller import *
 from controllers.stripe_controller import *
+from controllers.category_controller import *
+from controllers.story_controller import *
+from controllers.feed_controller import *
+from controllers.feed_comment_controller import *
 
