@@ -400,6 +400,7 @@ def initialize_schema() -> None:
             properties=[
                 wvc.config.Property(name="user_id", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="content", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="user_question", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="agent_id", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="agent_content", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="like_ids", data_type=wvc.config.DataType.TEXT_ARRAY),
@@ -439,6 +440,8 @@ def initialize_schema() -> None:
             properties=[
                 wvc.config.Property(name="name", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="description", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="author_group", data_type=wvc.config.DataType.TEXT),
+                wvc.config.Property(name="type", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="created_at", data_type=wvc.config.DataType.DATE),
                 wvc.config.Property(name="updated_at", data_type=wvc.config.DataType.DATE),
             ]
@@ -457,7 +460,6 @@ def initialize_schema() -> None:
                 wvc.config.Property(name="title", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="category_id", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="content", data_type=wvc.config.DataType.TEXT),
-                wvc.config.Property(name="type", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="language", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="status", data_type=wvc.config.DataType.TEXT),
                 wvc.config.Property(name="created_at", data_type=wvc.config.DataType.DATE),

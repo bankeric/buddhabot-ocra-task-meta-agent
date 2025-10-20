@@ -15,15 +15,17 @@ def create_feed_endpoint():
         content = data.get('content')
         agent_id = data.get('agent_id')
         agent_content = data.get('agent_content')
+        user_question = data.get('user_question')
 
-        if not all([user_id, content, agent_id, agent_content]):
+        if not all([user_id, content, agent_id, agent_content, user_question]):
             return jsonify({"error": "Missing required fields"}), 400
 
         feed_data = CreateFeedRequest(
             user_id=user_id,
             content=content,
             agent_id=agent_id,
-            agent_content=agent_content
+            agent_content=agent_content,
+            user_question=user_question
         )
         feed_id = create_feed_entry(feed_data)
 

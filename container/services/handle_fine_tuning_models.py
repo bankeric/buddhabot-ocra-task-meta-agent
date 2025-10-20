@@ -235,9 +235,11 @@ def check_fine_tuning_model_permissions(current_user: Dict[str, Any], target_mod
     try:
         if not current_user:
             return False
+        
+        current_role = current_user.get("role", UserRole.VIEWER.value)
 
-        # Admin can do everything
-        if current_user.get("role", UserRole.VIEWER.value) == UserRole.ADMIN.value:
+        # Admin and Owner can do everything
+        if current_role == UserRole.ADMIN.value or current_role == UserRole.OWNER.value:
             return True
 
         # For non-admin users

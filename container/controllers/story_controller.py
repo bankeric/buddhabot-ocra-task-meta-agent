@@ -16,7 +16,6 @@ def create_story_endpoint():
         author = data.get('author', '')
         title = data.get('title', '')
         content = data.get('content', '')
-        type = data.get('type', 'verse')
         language = data.get('language', 'en')
         category_id = data.get('category_id', '')
         status = data.get('status', 'draft')
@@ -28,7 +27,6 @@ def create_story_endpoint():
             author=author,
             title=title,
             content=content,
-            type=type,
             language=language,
             category_id=category_id,
             status=status
@@ -66,12 +64,11 @@ def update_story_endpoint(story_id):
         data = request.json
         title = data.get('title')
         content = data.get('content')
-        type = data.get('type')
         language = data.get('language')
-        category = data.get('category')
+        category_id = data.get('category_id')
         status = data.get('status')
 
-        if not any([title, content, type, language, category, status]):
+        if not any([title, content, language, category_id, status]):
             return jsonify({"error": "No fields to update"}), 400
 
         story = get_story_by_id(story_id)
@@ -81,9 +78,8 @@ def update_story_endpoint(story_id):
         update_data = {k: v for k, v in {
             "title": title,
             "content": content,
-            "type": type,
             "language": language,
-            "category": category,
+            "category_id": category_id,
             "status": status
         }.items() if v is not None}
 
@@ -127,7 +123,6 @@ def get_stories_endpoint():
     try:
         filters = {
             "author": request.args.get('author'),
-            "type": request.args.get('type'),
             "language": request.args.get('language'),
             "category": request.args.get('category'),
             "status": request.args.get('status')

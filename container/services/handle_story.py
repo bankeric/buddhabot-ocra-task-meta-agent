@@ -17,7 +17,6 @@ def create_story(request: CreateStoryRequest) -> str:
         "author": request.author,
         "title": request.title,
         "content": request.content,
-        "type": request.type,
         "language": request.language,
         "category_id": request.category_id,
         "status": request.status,
@@ -29,7 +28,7 @@ def create_story(request: CreateStoryRequest) -> str:
 
 def get_all_stories(limit: int, offset: int) -> list[dict]:
     """Get all stories with pagination"""
-    stories = search_non_vector_collection(COLLECTION_STORIES, limit=limit, offset=offset, sort_by="created_at", sort_order="desc")
+    stories = search_non_vector_collection(COLLECTION_STORIES, limit=limit, properties=["author", "title", "content", "language", "category_id", "status", "created_at", "updated_at"], offset=offset, sort_by="created_at", sort_order="desc")
     return stories
 
 def update_story(story_id: str, updated_data: dict) -> None:
@@ -46,7 +45,7 @@ def delete_story(story_id: str) -> None:
 def get_story_by_id(story_id: str) -> dict:
     """Get a story by its ID"""
     filters = Filter.by_id().equal(story_id)
-    stories = search_non_vector_collection(COLLECTION_STORIES, filters=filters, properties=["author", "title", "content", "type", "language", "category_id", "status", "created_at", "updated_at"])
+    stories = search_non_vector_collection(COLLECTION_STORIES, filters=filters, properties=["author", "title", "content", "language", "category_id", "status", "created_at", "updated_at"])
     
     if not stories:
         raise StoryError("Story not found", 404)
@@ -96,5 +95,5 @@ def get_stories_by_filters(filters: dict, limit: int = 10, offset: int = 0) -> l
     else:
         combined_filter = None
 
-    stories = search_non_vector_collection(COLLECTION_STORIES, filters=combined_filter, limit=limit, offset=offset, sort=Sort.by_property("created_at", ascending=False), properties=["author", "title", "content", "type", "language", "category_id", "status", "created_at", "updated_at"])
+    stories = search_non_vector_collection(COLLECTION_STORIES, filters=combined_filter, limit=limit, offset=offset, sort=Sort.by_property("created_at", ascending=False), properties=["author", "title", "content", "language", "category_id", "status", "created_at", "updated_at"])
     return stories
