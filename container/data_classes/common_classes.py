@@ -344,6 +344,7 @@ class FeedType(Enum):
 class CreateFeedRequest:
     user_id: str
     content: str
+    user_question: str
     agent_id: str
     agent_content: str
 
@@ -358,7 +359,6 @@ class CreateStoryRequest:
     author: str
     title: str
     content: str
-    type: str
     language: str
     category_id: str
     status: str

@@ -4,6 +4,9 @@ from data_classes.common_classes import CreateFeedRequest, FeedType
 from libs.weaviate_lib import COLLECTION_FEEDS, delete_collection_object, search_non_vector_collection, update_collection_object, insert_to_collection, delete_collection_objects_many
 from weaviate.classes.query import Filter, Sort
 
+from services.handle_agent import get_agent_by_id
+from services.handle_user import get_user_by_id
+
 class FeedError(Exception):
     def __init__(self, message: str, status_code: int = 400):
         self.message = message
@@ -18,6 +21,7 @@ def create_feed_entry(feed_data: CreateFeedRequest) -> None:
         "content": feed_data.content,
         "agent_id": feed_data.agent_id,
         "agent_content": feed_data.agent_content,
+        "user_question": feed_data.user_question,
         "like_ids": [],
         "retweet_ids": [],
         "type": FeedType.POST.value,
@@ -42,8 +46,18 @@ def get_new_feeds(limit: int, offset: int, filters: dict) -> list[dict]:
     else:
         combined_filter = None
 
-    sort = Sort.by_property("created_at", True)
-    feeds = search_non_vector_collection(COLLECTION_FEEDS, filters=combined_filter, limit=limit, offset=offset, sort=sort, properties=["user_id", "content", "agent_id", "agent_content", "like_ids", "retweet_ids", "type", "created_at", "updated_at"])
+    sort = Sort.by_property("created_at", False)
+    feeds = search_non_vector_collection(COLLECTION_FEEDS, filters=combined_filter, limit=limit, offset=offset, sort=sort, properties=["user_id", "content", "user_question", "agent_id", "agent_content", "like_ids", "retweet_ids", "type", "created_at", "updated_at"])
+
+    # Get user info for each feed
+    for feed in feeds:
+        user_info = get_user_by_id(feed["user_id"])
+        feed["user_info"] = user_info
+
+    # Get agent info for each feed if agent_id is present
+    for feed in feeds:
+        agent_info = get_agent_by_id(feed["agent_id"])
+        feed["agent_info"] = agent_info
     return feeds
 
 # Read Operations
@@ -75,8 +89,8 @@ def delete_feeds_by_user_id(user_id: str) -> None:
 # Social Interactions
 def like_feed_entry(feed_id: str, user_id: str) -> None:
     """Toggle like or dislike a feed entry"""
-    filters = Filter("id").eq(feed_id)
-    feeds = search_non_vector_collection(COLLECTION_FEEDS, filters=filters, limit=1)
+    filters = Filter.by_id().equal(feed_id)
+    feeds = search_non_vector_collection(COLLECTION_FEEDS, filters=filters, limit=1, properties=["like_ids"])
     if not feeds:
         raise FeedError(f"Feed with ID {feed_id} not found", 404)
     
@@ -94,8 +108,8 @@ def like_feed_entry(feed_id: str, user_id: str) -> None:
 
 def retweet_feed_entry(user_id: str, feed_id: str, user_content: str) -> None:
     """Retweet a feed entry"""
-    filters = Filter("id").eq(feed.feed_id)
-    feeds = search_non_vector_collection(COLLECTION_FEEDS, filters=filters, limit=1)
+    filters = Filter.by_id().equal(feed_id)
+    feeds = search_non_vector_collection(COLLECTION_FEEDS, filters=filters, limit=1, properties=["user_question", "agent_id", "agent_content", "retweet_ids"])
     if not feeds:
         raise FeedError(f"Feed with ID {feed_id} not found", 404)
 
@@ -103,8 +117,9 @@ def retweet_feed_entry(user_id: str, feed_id: str, user_content: str) -> None:
     data = {
         "user_id": user_id,
         "content": user_content,
-        "agent_id": feed.agent_id,
-        "agent_content": feed.agent_content,
+        "user_question": feed["user_question"],
+        "agent_id": feed["agent_id"],
+        "agent_content": feed["agent_content"],
         "like_ids": [],
         "retweet_ids": [],
         "type": FeedType.RETWEET.value,
@@ -113,20 +128,18 @@ def retweet_feed_entry(user_id: str, feed_id: str, user_content: str) -> None:
     }
 
     retweet_id = insert_to_collection(COLLECTION_FEEDS, data)
-    
-
     retweet_ids: list[str] = feed.get("retweet_ids", [])
     if user_id not in retweet_ids:
         retweet_ids.append(user_id)
 
     update_data = {"retweet_ids": retweet_ids}
-    update_feed_entry(feed.id, update_data)
+    update_feed_entry(feed["uuid"], update_data)
     return retweet_id
 
 def get_feed_by_id(feed_id: str) -> dict:
     """Get a feed by its ID"""
     filters = Filter.by_id().equal(feed_id)
-    feeds = search_non_vector_collection(COLLECTION_FEEDS, filters=filters, limit=1, properties=["user_id", "content", "agent_id", "agent_content", "like_ids", "retweet_ids", "type", "created_at", "updated_at"])
+    feeds = search_non_vector_collection(COLLECTION_FEEDS, filters=filters, limit=1, properties=["user_id", "content", "user_question", "agent_id", "agent_content", "like_ids", "retweet_ids", "type", "created_at", "updated_at"])
     if not feeds:
         raise FeedError(f"Feed with ID {feed_id} not found", 404)
     

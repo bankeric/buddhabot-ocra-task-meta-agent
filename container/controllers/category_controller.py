@@ -13,12 +13,13 @@ def create_category_endpoint():
         data = request.json
         name = data.get('name')
         description = data.get('description')
+        type = data.get('type')
+        author_group = data.get('author_group')
 
-        if not all([name, description]):
+        if not all([name, description, type, author_group]):
             return jsonify({"error": "Missing required fields"}), 400
 
-     
-        category_id = create_category(name, description)
+        category_id = create_category(name, description, type, author_group)
 
         return jsonify({
             "message": "Feed created successfully",
@@ -40,7 +41,8 @@ def get_categories_endpoint():
 
         limit = int(data.get('limit', 10))
         offset = int(data.get('offset', 0))
-        categories = get_all_categories(limit=limit, offset=offset)
+        include_stories = data.get('include_stories', 'false').lower() == 'true'
+        categories = get_all_categories(limit=limit, offset=offset, include_stories=include_stories)
         return jsonify({
             "status": "success",
             "data": categories
@@ -77,8 +79,10 @@ def update_category_endpoint(category_id):
         data = request.json
         name = data.get('name')
         description = data.get('description')
+        type = data.get('type')
+        author_group = data.get('author_group')
 
-        if not all([name, description]):
+        if not all([name, description, type, author_group]):
             return jsonify({"error": "Missing required fields"}), 400
 
         category = get_category_by_id(category_id)
