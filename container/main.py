@@ -7,6 +7,7 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+isProduction = os.environ.get("NODE_ENV") == "production"
 
 @contextmanager
 def weaviate_connection():
@@ -19,4 +20,4 @@ if __name__ == '__main__':
     with weaviate_connection():
         initialize_schema()
         port = int(os.environ.get("PORT", 8080))
-        app.run(host="0.0.0.0", port=port, threaded=False)
+        app.run(host="0.0.0.0", port=port, threaded=False, debug=not isProduction)

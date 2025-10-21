@@ -19,6 +19,8 @@ def create_story_endpoint():
         language = data.get('language', 'en')
         category_id = data.get('category_id', '')
         status = data.get('status', 'draft')
+        image_url = data.get('image_url', None)
+        audio_url = data.get('audio_url', None)
 
         if not all([title, content]):
             return jsonify({"error": "Missing required fields"}), 400
@@ -29,7 +31,9 @@ def create_story_endpoint():
             content=content,
             language=language,
             category_id=category_id,
-            status=status
+            status=status,
+            image_url=image_url,
+            audio_url=audio_url
         )
 
         
@@ -67,8 +71,10 @@ def update_story_endpoint(story_id):
         language = data.get('language')
         category_id = data.get('category_id')
         status = data.get('status')
+        image_url = data.get('image_url')
+        audio_url = data.get('audio_url')
 
-        if not any([title, content, language, category_id, status]):
+        if not any([title, content, language, category_id, status, image_url, audio_url]):
             return jsonify({"error": "No fields to update"}), 400
 
         story = get_story_by_id(story_id)
@@ -80,7 +86,9 @@ def update_story_endpoint(story_id):
             "content": content,
             "language": language,
             "category_id": category_id,
-            "status": status
+            "status": status,
+            "image_url": image_url,
+            "audio_url": audio_url
         }.items() if v is not None}
 
         update_story(story_id, update_data)
@@ -121,6 +129,8 @@ def delete_story_endpoint(story_id):
 def get_stories_endpoint():
     """ Get all stories with optional filters """
     try:
+        limit = int(request.args.get('limit', 10))
+        offset = int(request.args.get('offset', 0))
         filters = {
             "author": request.args.get('author'),
             "language": request.args.get('language'),
@@ -130,7 +140,7 @@ def get_stories_endpoint():
         # Remove None values from filters
         filters = {k: v for k, v in filters.items() if v is not None}
 
-        stories = get_stories_by_filters(filters)
+        stories = get_stories_by_filters(filters, limit=limit, offset=offset)
         return jsonify({
             "status": "success",
             "data": stories

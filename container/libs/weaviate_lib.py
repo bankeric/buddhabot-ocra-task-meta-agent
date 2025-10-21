@@ -448,6 +448,15 @@ def initialize_schema() -> None:
         )
         print("🙌🏼 Collection Categories created successfully")
 
+    try:
+        categories_collection = client.collections.get(COLLECTION_CATEGORIES)
+
+        categories_collection.config.add_property(
+            wvc.config.Property(name="language", data_type=wvc.config.DataType.TEXT),
+        )
+    except Exception as e:
+        print(f"Error adding language property to Categories collection: {e}")
+
     # ----------------------------------------------------------
     # Stories COLLECTION
     # ----------------------------------------------------------
@@ -467,6 +476,22 @@ def initialize_schema() -> None:
             ]
         )
         print("🙌🏼 Collection Stories created successfully")
+
+    # add thought property to Stories collection
+    try:
+        stories_collection = client.collections.get(COLLECTION_STORIES)
+
+        stories_collection.config.add_property(
+            wvc.config.Property(name="audio_url", data_type=wvc.config.DataType.TEXT),
+        )
+
+        stories_collection.config.add_property(
+            wvc.config.Property(name="image_url", data_type=wvc.config.DataType.TEXT),
+        )
+     
+
+    except Exception as e:
+        print(f"Error adding thought property to Stories collection: {e}")
 
     print("🙌🏼 Schema initialized successfully")
 

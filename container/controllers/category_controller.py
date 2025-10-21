@@ -1,5 +1,7 @@
+from turtle import title
 from __init__ import app, login_required, contributor_required, admin_required
 from flask import request, jsonify, g
+from data_classes.common_classes import CreateCategoryRequest
 from services.handle_category import get_all_categories, CategoryError, create_category, get_category_by_id, update_category, delete_category
 
 
@@ -15,11 +17,20 @@ def create_category_endpoint():
         description = data.get('description')
         type = data.get('type')
         author_group = data.get('author_group')
+        language = data.get('language')
 
-        if not all([name, description, type, author_group]):
+        if not all([name, description, type, author_group, language]):
             return jsonify({"error": "Missing required fields"}), 400
-
-        category_id = create_category(name, description, type, author_group)
+        
+        category_id = create_category(
+            CreateCategoryRequest(
+                name=name,
+                description=description,
+                type=type,
+                author_group=author_group,
+                language=language
+            )
+        )
 
         return jsonify({
             "message": "Feed created successfully",
@@ -42,7 +53,13 @@ def get_categories_endpoint():
         limit = int(data.get('limit', 10))
         offset = int(data.get('offset', 0))
         include_stories = data.get('include_stories', 'false').lower() == 'true'
-        categories = get_all_categories(limit=limit, offset=offset, include_stories=include_stories)
+        filters = {
+            "language": data.get('language')
+        }
+        # Remove None values from filters
+        filters = {k: v for k, v in filters.items() if v is not None}
+        categories = get_all_categories(limit=limit, offset=offset, include_stories=include_stories, filters=filters)
+
         return jsonify({
             "status": "success",
             "data": categories
@@ -81,16 +98,24 @@ def update_category_endpoint(category_id):
         description = data.get('description')
         type = data.get('type')
         author_group = data.get('author_group')
+        language = data.get('language')
 
-        if not all([name, description, type, author_group]):
-            return jsonify({"error": "Missing required fields"}), 400
+        if not any([name, description, type, author_group, language]):
+            return jsonify({"error": "No fields to update"}), 400
 
         category = get_category_by_id(category_id)
         if not category:
             return jsonify({"error": "Category not found"}), 404
+        
+        update_data = {k: v for k, v in {
+            "name": name,
+            "description": description,
+            "type": type,
+            "author_group": author_group,
+            "language": language
+        }.items() if v is not None}
 
-
-        update_category(category_id, {"name": name, "description": description})
+        update_category(category_id, update_data)
 
         return jsonify({
             "message": "Category updated successfully"
