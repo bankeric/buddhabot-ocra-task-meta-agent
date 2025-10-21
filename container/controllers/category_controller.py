@@ -1,4 +1,3 @@
-from turtle import title
 from __init__ import app, login_required, contributor_required, admin_required
 from flask import request, jsonify, g
 from data_classes.common_classes import CreateCategoryRequest
