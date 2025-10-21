@@ -354,6 +354,15 @@ class CreateCommentFeedRequest:
     user_id: str
     feed_id: str
     content: str
+
+@dataclass
+class CreateCategoryRequest:
+    name: str
+    description: Optional[str] = None
+    author_group: Optional[str] = None
+    type: Optional[str] = None
+    language: Optional[str] = None
+    
 @dataclass
 class CreateStoryRequest:
     author: str
@@ -362,3 +371,5 @@ class CreateStoryRequest:
     language: str
     category_id: str
     status: str
+    image_url: Optional[str] = None
+    audio_url: Optional[str] = None

@@ -188,8 +188,8 @@ def check_user_permissions(current_user_id: str, target_user_id: str = None, act
         if not current_user:
             return False
 
-        # Admin can do everything
-        if current_user.get("role", UserRole.VIEWER.value) == UserRole.ADMIN.value:
+        # Admin and Owner can do everything
+        if current_user.get("role", UserRole.VIEWER.value) in [UserRole.ADMIN.value, UserRole.OWNER.value]:
             return True
 
         # For non-admin users
