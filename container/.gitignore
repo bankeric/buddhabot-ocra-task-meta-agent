@@ -74,3 +74,6 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg 
+
+# ADC google credentials
+adc_cloud.json

@@ -5,16 +5,22 @@ from typing import Generator, Optional
 from google.cloud import texttospeech
 from google.cloud.texttospeech_v1 import SynthesizeSpeechRequest
 from flask import Response, stream_template
+from google.oauth2 import service_account
+
 import base64
 
+credentials_path = 'adc_cloud.json'
 logger = logging.getLogger(__name__)
+credentials = service_account.Credentials.from_service_account_file(
+                credentials_path
+            )
 
 class TTSStreamingService:
     def __init__(self):
         """Initialize TTS service with Google Cloud credentials"""
         try:
             # Initialize the TTS client
-            self.client = texttospeech.TextToSpeechClient()
+            self.client = texttospeech.TextToSpeechClient(credentials=credentials)
             logger.info("TTS client initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize TTS client: {str(e)}")
