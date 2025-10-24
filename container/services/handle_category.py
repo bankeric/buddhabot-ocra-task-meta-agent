@@ -2,7 +2,7 @@ from datetime import datetime, UTC
 from warnings import filters
 from libs.weaviate_lib import COLLECTION_CATEGORIES, COLLECTION_STORIES, delete_collection_object, search_non_vector_collection, update_collection_object, insert_to_collection, delete_collection_objects_many
 from weaviate.classes.query import Filter
-from data_classes.common_classes import CreateCategoryRequest
+from data_classes.common_classes import CreateCategoryRequest, StoryStatus
 
 class CategoryError(Exception):
     def __init__(self, message: str, status_code: int = 400):
@@ -41,7 +41,7 @@ def get_all_categories(limit: int, offset: int, include_stories: bool, filters: 
     categories = search_non_vector_collection(COLLECTION_CATEGORIES, limit=limit, offset=offset, properties=properties, filters=combined_filter)
     if include_stories:
         for category in categories:
-            filters = Filter.by_property("category_id").equal(category["uuid"])
+            filters = Filter.by_property("category_id").equal(category["uuid"]).__and__(Filter.by_property("status").equal(StoryStatus.PUBLISHED.value))
             story_properties = ["author", "title", "content", "language", "category_id", "status", "created_at", "updated_at", "image_url", "audio_url"]
             category["stories"] = search_non_vector_collection(COLLECTION_STORIES, filters=filters, properties=story_properties)
     return categories

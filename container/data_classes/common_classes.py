@@ -373,3 +373,9 @@ class CreateStoryRequest:
     status: str
     image_url: Optional[str] = None
     audio_url: Optional[str] = None
+
+@dataclass
+class StoryStatus(Enum):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
